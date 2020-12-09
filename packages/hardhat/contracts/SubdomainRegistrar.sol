@@ -216,7 +216,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         if (data.length > 0) {
             require(
                 resolverInstance.checkCallData(subnode, data),
-                "calldata incorrect"
+                "namehash does not match in calldata"
             );
             resolverInstance.multicall(data);
         }

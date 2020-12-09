@@ -139,12 +139,8 @@ async function main() {
     true
   )
 
-  console.log('SubDomainRegistrar.configureDomain()')
   await SubDomainRegistrar.configureDomain(namehash('ens.eth'), '1000000', 0)
-  //await EnsRegistry.setOwner(namehash('ens.eth'), SubDomainRegistrar.address)
-  //console.log('EnsRegistry.setOwner()')
-  console.log('SubDomainRegistrar.register()')
-  console.log('hash of awesome.ens.eth', namehash('awesome.ens.eth'))
+
   const tx = PublicResolver.interface.encodeFunctionData(
     'setAddr(bytes32,uint256,bytes)',
     [namehash('awesome.ens.eth'), 60, account]

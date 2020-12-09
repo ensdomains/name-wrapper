@@ -70,19 +70,14 @@ async function deploy(name, _args) {
 }
 
 describe('My Dapp', function () {
-  let myContract
+  let ENSRegistry
+  let RestrictedNameWrapper
+  let PublicResolver
+  let SubDomainRegistrar
 
   describe('YourContract', function () {
     it('Should deploy ENS contracts', async function () {
-      console.log('📡 Deploy \n')
-      // auto deploy to read contract directory and deploy them all (add ".args" files for arguments)
-      const contractList = await autoDeploy()
-      console.log('finish auto deploy')
-
-      //console.log('contractList', contractList)
-      const EnsRegistry = contractList.find(
-        (contract) => contract.name === 'ENSRegistry'
-      )
+      EnsRegistry = await deploy('ENSRegistry')
       const ROOT_NODE =
         '0x0000000000000000000000000000000000000000000000000000000000000000'
 
@@ -90,15 +85,15 @@ describe('My Dapp', function () {
       const [owner, addr1] = await ethers.getSigners()
       const account = await owner.getAddress()
 
-      const RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
+      RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
         EnsRegistry.address,
       ])
-      const PublicResolver = await deploy('PublicResolver', [
+      PublicResolver = await deploy('PublicResolver', [
         addresses['ENSRegistry'],
         addresses['RestrictedNameWrapper'],
       ])
 
-      const SubDomainRegistrar = await deploy('SubdomainRegistrar', [
+      SubDomainRegistrar = await deploy('SubdomainRegistrar', [
         addresses['ENSRegistry'],
         addresses['RestrictedNameWrapper'],
       ])
@@ -107,6 +102,13 @@ describe('My Dapp', function () {
       await EnsRegistry.setSubnodeOwner(
         ROOT_NODE,
         utils.keccak256(utils.toUtf8Bytes('eth')),
+        account
+      )
+
+      // setup vitalik.eth
+      await EnsRegistry.setSubnodeOwner(
+        namehash('eth'),
+        utils.keccak256(utils.toUtf8Bytes('vitalik')),
         account
       )
 
@@ -148,12 +150,68 @@ describe('My Dapp', function () {
       )
     })
 
-    describe('setPurpose()', function () {
-      it('Should be able to set a new purpose', async function () {
-        const newPurpose = 'Test Purpose'
+    describe('configureDomain', function () {
+      it('Should be able to configure a new domain', async function () {
+        await SubDomainRegistrar.configureDomain(
+          namehash('vitalik.eth'),
+          '1000000',
+          0
+        )
 
-        await myContract.setPurpose(newPurpose)
-        expect(await myContract.purpose()).to.equal(newPurpose)
+        // TODO: assert vitalik.eth has been configured
+      })
+
+      it('Should be able to configure a new domain and then register', async function () {
+        const [owner, addr1] = await ethers.getSigners()
+        const account = await owner.getAddress()
+
+        await SubDomainRegistrar.configureDomain(
+          namehash('ens.eth'),
+          '1000000',
+          0
+        )
+
+        const tx = PublicResolver.interface.encodeFunctionData(
+          'setAddr(bytes32,uint256,bytes)',
+          [namehash('awesome.ens.eth'), 60, account]
+        )
+
+        await SubDomainRegistrar.register(
+          namehash('ens.eth'),
+          'awesome',
+          account,
+          account,
+          addresses['PublicResolver'],
+          [tx],
+          {
+            value: '1000000',
+          }
+        )
+      })
+
+      it('Should be able to configure a new domain and then register fails because namehash does not match', async function () {
+        const [owner, addr1] = await ethers.getSigners()
+        const account = await owner.getAddress()
+
+        const tx = PublicResolver.interface.encodeFunctionData(
+          'setAddr(bytes32,uint256,bytes)',
+          [namehash('awesome.ens.eth'), 60, account]
+        )
+
+        //should fail as tx is not correct
+        await expect(
+          SubDomainRegistrar.register(
+            namehash('ens.eth'),
+            'othername',
+            account,
+            account,
+            addresses['PublicResolver'],
+            [tx],
+            {
+              value: '1000000',
+            }
+          )
+        ).to.be.revertedWith('namehash does not match in calldata')
       })
     })
   })
