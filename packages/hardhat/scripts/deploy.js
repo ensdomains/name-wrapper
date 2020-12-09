@@ -83,7 +83,7 @@ async function main() {
   const account = await owner.getAddress()
 
   const RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
-    addresses['ENSRegistry'],
+    EnsRegistry.address,
   ])
   const PublicResolver = await deploy('PublicResolver', [
     addresses['ENSRegistry'],
@@ -145,28 +145,49 @@ async function main() {
   //console.log('EnsRegistry.setOwner()')
   console.log('SubDomainRegistrar.register()')
   console.log('hash of awesome.ens.eth', namehash('awesome.ens.eth'))
+  const tx = PublicResolver.interface.encodeFunctionData(
+    'setAddr(bytes32,uint256,bytes)',
+    [namehash('awesome.ens.eth'), 60, account]
+  )
+
   await SubDomainRegistrar.register(
     namehash('ens.eth'),
     'awesome',
     account,
     account,
     addresses['PublicResolver'],
-    [namehash('ens.eth')],
+    [tx],
     {
       value: '1000000',
     }
   )
 
-  // await subDomainRegistrar.register(
-  //   '0x5cee339e13375638553bdf5a6e36ba80fb9f6a4f0783680884d92b558aa471da',
-  //   'awesome',
-  //   account,
-  //   account,
-  //   addresses['PublicResolver'],
-  //   {
-  //     value: '100000',
-  //   }
-  // )
+  //should fail as tx is not correct
+  await SubDomainRegistrar.register(
+    namehash('ens.eth'),
+    'othername',
+    account,
+    account,
+    addresses['PublicResolver'],
+    [tx],
+    {
+      value: '1000000',
+    }
+  )
+
+  //empty array no records should pass
+
+  await SubDomainRegistrar.register(
+    namehash('ens.eth'),
+    'super',
+    account,
+    account,
+    addresses['PublicResolver'],
+    [],
+    {
+      value: '1000000',
+    }
+  )
 
   console.log('configured ens.eth in subdomain Registrar')
 }

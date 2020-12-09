@@ -76,25 +76,33 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
         return owner == msg.sender || authorisations[node][owner][msg.sender];
     }
 
+    function readBytes32(bytes memory self, uint256 idx)
+        internal
+        pure
+        returns (bytes32 ret)
+    {
+        require(idx + 32 <= self.length);
+        assembly {
+            ret := mload(add(add(self, 32), idx))
+        }
+    }
+
     function checkCallData(bytes32 node, bytes[] calldata data)
         external
-        pure
+        view
         returns (bool)
     {
-        bool isValid = false;
+        bool isValid = true;
 
-        // for (uint256 i = 0; i < data.length; i++) {
-        //     bytes memory bytesArray = new bytes(32);
-        //     for (uint256 j; j < 32; j++) {
-        //         bytesArray[j] = data[i][j + 4];
-        //     }
-        //     for (uint256 k; k < 32; k++) {
-        //         if (bytesArray[k] != node[k]) {
-        //             isValid = false;
-        //             return isValid;
-        //         }
-        //     }
-        // }
+        for (uint256 i = 0; i < data.length; i++) {
+            bytes32 bytesArray = readBytes32(data[i], 4);
+            if (bytesArray != node) {
+                isValid = false;
+                return isValid;
+            }
+        }
+        console.log("isValid");
+        console.log(isValid);
         return isValid;
     }
 

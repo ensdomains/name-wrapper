@@ -211,18 +211,28 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         address owner = ens.owner(subnode);
         console.log("owner in registry", owner);
         Resolver resolverInstance = Resolver(resolver);
-        if (resolverInstance.checkCallData(subnode, data)) {
+        console.log("data.length");
+        console.log(data.length);
+        if (data.length > 0) {
+            require(
+                resolverInstance.checkCallData(subnode, data),
+                "calldata incorrect"
+            );
             resolverInstance.multicall(data);
         }
+
         wrapper.setOwner(subnode, subdomainOwner);
 
-        emit NewRegistration(
-            node,
-            subdomain,
-            subdomainOwner,
-            referrer,
-            domain.price
-        );
+        // Commenting out for now because of following error:
+        // "CompilerError: Stack too deep, try removing local variables"
+
+        // emit NewRegistration(
+        //     node,
+        //     subdomain,
+        //     subdomainOwner,
+        //     referrer,
+        //     domain.price
+        // );
     }
 
     /**
