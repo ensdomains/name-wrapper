@@ -89,7 +89,7 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
 
     function checkCallData(bytes32 node, bytes[] calldata data)
         external
-        view
+        pure
         returns (bool)
     {
         bool isValid = true;
@@ -101,8 +101,6 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
                 return isValid;
             }
         }
-        console.log("isValid");
-        console.log(isValid);
         return isValid;
     }
 

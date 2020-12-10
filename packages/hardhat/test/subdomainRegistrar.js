@@ -69,13 +69,13 @@ async function deploy(name, _args) {
   return contract
 }
 
-describe('My Dapp', function () {
+describe('Subdomain Registrar and Wrapper', function () {
   let ENSRegistry
   let RestrictedNameWrapper
   let PublicResolver
   let SubDomainRegistrar
 
-  describe('YourContract', function () {
+  describe('SubdomainRegistrar', function () {
     it('Should deploy ENS contracts', async function () {
       EnsRegistry = await deploy('ENSRegistry')
       const ROOT_NODE =
@@ -150,7 +150,7 @@ describe('My Dapp', function () {
       )
     })
 
-    describe('configureDomain', function () {
+    describe('SubDomainRegistrar configureDomain', function () {
       it('Should be able to configure a new domain', async function () {
         await SubDomainRegistrar.configureDomain(
           namehash('vitalik.eth'),
@@ -212,6 +212,24 @@ describe('My Dapp', function () {
             }
           )
         ).to.be.revertedWith('namehash does not match in calldata')
+      })
+    })
+
+    describe('RestrictedNameWrapper', function () {
+      it('wrap() wraps a name with the ERC721 standard and fuses', async function () {
+        const [owner, addr1] = await ethers.getSigners()
+        const account = await owner.getAddress()
+        await EnsRegistry.setSubnodeOwner(
+          namehash('eth'),
+          utils.keccak256(utils.toUtf8Bytes('wrapped')),
+          account
+        )
+        await EnsRegistry.setApprovalForAll(RestrictedNameWrapper.address, true)
+        await RestrictedNameWrapper.wrap(namehash('wrapped.eth'), 255, account)
+        const ownerOfWrappedEth = await RestrictedNameWrapper.ownerOf(
+          namehash('wrapped.eth')
+        )
+        expect(ownerOfWrappedEth).to.equal(account)
       })
     })
   })
