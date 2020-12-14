@@ -242,4 +242,3 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
 //Combine CAN_SET_RESOLVER and CAN_SET_TTL to one fuse
 // Add events so subgraph can track
 
-//Registry for own fuse

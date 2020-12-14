@@ -189,32 +189,13 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
             data
         );
 
-        // wrapper.setSubnodeRecordAndWrap(
-        //     node,
-        //     subdomainLabel,
-        //     address(this),
-        //     address(resolver),
-        //     0,
-        //     255
-        // );
-        // //set the owner to this contract so it can setAddr()
-
-        bytes32 subnode = keccak256(abi.encodePacked(node, subdomainLabel));
-        address owner = ens.owner(subnode);
-        console.log("owner in registry", owner);
-
-        // wrapper.setOwner(subnode, subdomainOwner);
-
-        // Commenting out for now because of following error:
-        // "CompilerError: Stack too deep, try removing local variables"
-
-        // emit NewRegistration(
-        //     node,
-        //     subdomain,
-        //     subdomainOwner,
-        //     referrer,
-        //     domain.price
-        // );
+        emit NewRegistration(
+            node,
+            subdomain,
+            subdomainOwner,
+            referrer,
+            domain.price
+        );
     }
 
     /**
