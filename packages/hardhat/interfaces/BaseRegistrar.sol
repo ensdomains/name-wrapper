@@ -1,10 +1,13 @@
 pragma solidity >=0.4.24;
 
-import "@ensdomains/ens/contracts/ENS.sol";
-import "openzeppelin-solidity/contracts/token/ERC721/IERC721.sol";
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
+//import "@ensdomains/ens/contracts/ENS.sol";
+import "./ENS.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract BaseRegistrar is IERC721, Ownable {
+//TODO import from NPM
+
+abstract contract BaseRegistrar is IERC721, Ownable {
     uint256 public constant GRACE_PERIOD = 90 days;
 
     event ControllerAdded(address indexed controller);
@@ -31,19 +34,19 @@ contract BaseRegistrar is IERC721, Ownable {
     mapping(address => bool) public controllers;
 
     // Authorises a controller, who can register and renew domains.
-    function addController(address controller) external;
+    function addController(address controller) external virtual;
 
     // Revoke controller permission for an address.
-    function removeController(address controller) external;
+    function removeController(address controller) external virtual;
 
     // Set the resolver for the TLD this registrar manages.
-    function setResolver(address resolver) external;
+    function setResolver(address resolver) external virtual;
 
     // Returns the expiration timestamp of the specified label hash.
-    function nameExpires(uint256 id) external view returns (uint256);
+    function nameExpires(uint256 id) external virtual view returns (uint256);
 
     // Returns true iff the specified name is available for registration.
-    function available(uint256 id) public view returns (bool);
+    function available(uint256 id) public virtual view returns (bool);
 
     /**
      * @dev Register a name.
@@ -52,12 +55,15 @@ contract BaseRegistrar is IERC721, Ownable {
         uint256 id,
         address owner,
         uint256 duration
-    ) external returns (uint256);
+    ) external virtual returns (uint256);
 
-    function renew(uint256 id, uint256 duration) external returns (uint256);
+    function renew(uint256 id, uint256 duration)
+        external
+        virtual
+        returns (uint256);
 
     /**
      * @dev Reclaim ownership of a name in ENS, if you own it in the registrar.
      */
-    function reclaim(uint256 id, address owner) external;
+    function reclaim(uint256 id, address owner) external virtual;
 }

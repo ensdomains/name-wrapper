@@ -48,23 +48,25 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         _;
     }
 
-    constructor(ENS _ens, IRestrictedNameWrapper _wrapper) public {
+    constructor(ENS _ens, IRestrictedNameWrapper _wrapper) {
         ens = _ens;
         wrapper = _wrapper;
         ens.setApprovalForAll(address(wrapper), true);
     }
 
     function configureDomain(
-        bytes32 node,
+        bytes32 parentNode,
+        bytes32 label,
         uint256 price,
         uint256 referralFeePPM
     ) public {
+        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         Domain storage domain = domains[node];
 
         //check if I'm the owner
         if (ens.owner(node) != address(wrapper)) {
             ens.setOwner(node, address(this));
-            wrapper.wrap(node, 255, msg.sender);
+            wrapper.wrap(parentNode, label, 255, msg.sender);
             console.log(
                 "wrapper.ownerOf(uint256(node))",
                 wrapper.ownerOf(uint256(node))
@@ -88,7 +90,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         bytes32 label,
         address subdomainOwner,
         Resolver resolver,
-        bytes[] memory data
+        bytes[] calldata data
     ) internal {
         // Get the subdomain so we can configure it
         console.log("doRegistration", address(this));
@@ -100,47 +102,29 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
             0,
             255
         );
+
         //set the owner to this contract so it can setAddr()
 
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        address owner = ens.owner(subnode);
-        console.log("owner in registry", owner);'
+
+        //setRecords
+        resolver.safeMulticall(subnode, data);
+
+        address addrVar = resolver.addr(subnode);
+        console.log(addrVar);
+        
+        // Pass ownership of the new subdomain to the registrant
         wrapper.setOwner(subnode, subdomainOwner);
+        
 
         // Problem - Current Public Resolver checks ENS registry for ownership. Owner will be the Restrivtve Wrapper
         // Possible solution A - use PublicResolver that knows how to check Restrictive Wrapper
-        // Possible solution B - Deploy an OwnerResolver for each subdomain name
-        // Possible solution C - Separate Public Resolver that uses Restrictive Name Wrapper
-        // Possible solution D - wrap setAuthorisation inside RestrictedWrapper - X (don't want the wrapper to know about resolvers)
 
-        // Set the address record on the resolver
-        // console.log("setAuthorisationForResolver");
-        // wrapper.setAuthorisationForResolver(
-        //     subnode,
-        //     address(this),
-        //     true,
-        //     resolver
-        // );
-        // console.log("setAuthorisationForResolver");
-        // wrapper.setAuthorisationForResolver(
-        //     subnode,
-        //     address(owner),
-        //     true,
-        //     resolver
-        // );
-        // check calldata for
-        // if (resolver.checkCallData(node, data)) {
-        //     resolver.multicall(subnode, data);
-        // }
-        address addrVar = resolver.addr(subnode);
-        console.log(addrVar);
-        // Currently fails as owner is stil the Restrictive Wrapper
+        
 
         // check if the address is != 0 and then set addr
         // reason to check some resolvers don't have setAddr
 
-        // Pass ownership of the new subdomain to the registrant
-        wrapper.setOwner(subnode, subdomainOwner);
     }
 
     function register(
@@ -192,19 +176,18 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         //     domain.owner.transfer(total);
         // }
 
-
         // Register the domain
         if (subdomainOwner == address(0x0)) {
             subdomainOwner = msg.sender;
         }
 
-        // bytes32 node,
-        // bytes32 label,
-        // address subdomainOwner,
-        // Resolver resolver,
-        // bytes[] memory data
-
-        doRegistration(node, label, subdomainOwner, resolver, data);
+        doRegistration(
+            node,
+            subdomainLabel,
+            subdomainOwner,
+            Resolver(resolver),
+            data
+        );
 
         // wrapper.setSubnodeRecordAndWrap(
         //     node,
@@ -216,19 +199,9 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         // );
         // //set the owner to this contract so it can setAddr()
 
-        // bytes32 subnode = keccak256(abi.encodePacked(node, subdomainLabel));
-        // address owner = ens.owner(subnode);
-        // console.log("owner in registry", owner);
-        // Resolver resolverInstance = Resolver(resolver);
-        // console.log("data.length");
-        // console.log(data.length);
-        // if (data.length > 0) {
-        //     require(
-        //         resolverInstance.checkCallData(subnode, data),
-        //         "namehash does not match in calldata"
-        //     );
-        //     resolverInstance.multicall(data);
-        // }
+        bytes32 subnode = keccak256(abi.encodePacked(node, subdomainLabel));
+        address owner = ens.owner(subnode);
+        console.log("owner in registry", owner);
 
         // wrapper.setOwner(subnode, subdomainOwner);
 

@@ -125,8 +125,7 @@ async function main() {
 
   console.log(
     'ens.setApprovalForAll SubDomainRegistrar',
-    SubDomainRegistrar.address,
-    true
+    SubDomainRegistrar.address
   )
   await EnsRegistry.setApprovalForAll(SubDomainRegistrar.address, true)
   console.log(
@@ -139,7 +138,12 @@ async function main() {
     true
   )
 
-  await SubDomainRegistrar.configureDomain(namehash('ens.eth'), '1000000', 0)
+  await SubDomainRegistrar.configureDomain(
+    namehash('eth'),
+    utils.keccak256(utils.toUtf8Bytes('ens')),
+    '1000000',
+    0
+  )
 
   const tx = PublicResolver.interface.encodeFunctionData(
     'setAddr(bytes32,uint256,bytes)',

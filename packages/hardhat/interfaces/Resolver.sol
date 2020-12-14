@@ -24,7 +24,7 @@ interface Resolver {
         pure
         returns (bool);
 
-    function multicall(bytes[] calldata data)
+    function safeMulticall(bytes32 node, bytes[] calldata data)
         external
         returns (bytes[] memory results);
 }

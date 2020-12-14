@@ -21,7 +21,7 @@ contract ENSRegistry is ENS {
     // Permits modifications only by the owner of the specified node.
     modifier authorised(bytes32 node) {
         address owner = records[node].owner;
-        console.log("owner", owner, msg.sender);
+        console.log("owner", owner, "msg.sender", msg.sender);
         require(
             owner == msg.sender || operators[owner][msg.sender],
             "sender is not owner oroperator"

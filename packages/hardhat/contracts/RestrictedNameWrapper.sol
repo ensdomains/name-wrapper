@@ -12,7 +12,7 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
 
     mapping(bytes32 => uint256) public fuses;
 
-    constructor(ENS _ens) public ERC721("ENS Name", "ENS") {
+    constructor(ENS _ens) ERC721("ENS Name", "ENS") {
         ens = _ens;
     }
 
@@ -24,6 +24,7 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
     function isOwnerOrApproved(bytes32 node, address addr)
         public
         override
+        view
         returns (bool)
     {
         //memory owner = ;
@@ -85,18 +86,20 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
     }
 
     function wrap(
-        bytes32 node,
+        bytes32 parentNode,
         bytes32 label,
         uint256 _fuses,
         address wrappedOwner
     ) public override {
         //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
-        if (canReplaceSubdomain(node)) {
+        if (canReplaceSubdomain(parentNode)) {
             _fuses = CAN_DO_EVERYTHING;
         }
-        //TODO modify the rest to use subnode label/node
+        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         fuses[node] = _fuses;
         address owner = ens.owner(node);
+        console.log("owner");
+        console.log(owner);
         require(
             owner == msg.sender || ens.isApprovedForAll(owner, msg.sender),
             "not approved and isn't sender"
@@ -149,7 +152,7 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
     function setSubnodeRecord(
         bytes32 node,
         bytes32 label,
-        address owner,
+        address addr,
         address resolver,
         uint64 ttl
     ) public ownerOnly(node) {
@@ -161,7 +164,7 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         );
         //TODO repeat this on setSubnodeOwner()
 
-        return ens.setSubnodeRecord(node, label, owner, resolver, ttl);
+        return ens.setSubnodeRecord(node, label, addr, resolver, ttl);
     }
 
     function setSubnodeOwner(
@@ -183,9 +186,8 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         uint64 ttl,
         uint256 _fuses
     ) public override returns (bytes32) {
-        bytes32 subnode = keccak256(abi.encodePacked(node, label));
         setSubnodeRecord(node, label, owner, resolver, ttl);
-        wrap(subnode, _fuses, owner);
+        wrap(node, label, _fuses, owner);
     }
 
     function setResolver(bytes32 node, address resolver)

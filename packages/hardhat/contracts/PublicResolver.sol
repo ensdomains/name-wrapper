@@ -87,29 +87,16 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
         }
     }
 
-    function checkCallData(bytes32 node, bytes[] calldata data)
-        external
-        pure
-        returns (bool)
-    {
-        bool isValid = true;
-
-        for (uint256 i = 0; i < data.length; i++) {
-            bytes32 bytesArray = readBytes32(data[i], 4);
-            if (bytesArray != node) {
-                isValid = false;
-                return isValid;
-            }
-        }
-        return isValid;
-    }
-
-    function multicall(bytes[] calldata data)
-        external
+    function safeMulticall(bytes32 node, bytes[] calldata data)
+        public
         returns (bytes[] memory results)
     {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
+            require(
+                node == 0 || readBytes32(data[i], 4) == node,
+                "invalid node for multicall"
+            );
             (bool success, bytes memory result) = address(this).delegatecall(
                 data[i]
             );
@@ -117,6 +104,13 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
             results[i] = result;
         }
         return results;
+    }
+
+    function multicall(bytes[] calldata data)
+        external
+        returns (bytes[] memory results)
+    {
+        return safeMulticall(0, data);
     }
 
     function supportsInterface(bytes4 interfaceID)

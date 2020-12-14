@@ -9,6 +9,8 @@ const namehash = n.hash
 
 use(solidity)
 
+const labelhash = (label) => utils.keccak256(utils.toUtf8Bytes(label))
+
 const addresses = {}
 
 const NO_AUTO_DEPLOY = [
@@ -69,14 +71,14 @@ async function deploy(name, _args) {
   return contract
 }
 
-describe('Subdomain Registrar and Wrapper', function () {
+describe('Subdomain Registrar and Wrapper', () => {
   let ENSRegistry
   let RestrictedNameWrapper
   let PublicResolver
   let SubDomainRegistrar
 
-  describe('SubdomainRegistrar', function () {
-    it('Should deploy ENS contracts', async function () {
+  describe('SubdomainRegistrar', () => {
+    it('Should deploy ENS contracts', async () => {
       EnsRegistry = await deploy('ENSRegistry')
       const ROOT_NODE =
         '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -139,6 +141,7 @@ describe('Subdomain Registrar and Wrapper', function () {
         true
       )
       await EnsRegistry.setApprovalForAll(SubDomainRegistrar.address, true)
+
       console.log(
         'RestrictedNameWrapper.setApprovalForAll SubDomainRegistrar',
         SubDomainRegistrar.address,
@@ -150,10 +153,11 @@ describe('Subdomain Registrar and Wrapper', function () {
       )
     })
 
-    describe('SubDomainRegistrar configureDomain', function () {
-      it('Should be able to configure a new domain', async function () {
+    describe('SubDomainRegistrar configureDomain', () => {
+      it('Should be able to configure a new domain', async () => {
         await SubDomainRegistrar.configureDomain(
-          namehash('vitalik.eth'),
+          namehash('eth'),
+          labelhash('vitalik'),
           '1000000',
           0
         )
@@ -161,12 +165,13 @@ describe('Subdomain Registrar and Wrapper', function () {
         // TODO: assert vitalik.eth has been configured
       })
 
-      it('Should be able to configure a new domain and then register', async function () {
+      it('Should be able to configure a new domain and then register', async () => {
         const [owner, addr1] = await ethers.getSigners()
         const account = await owner.getAddress()
 
         await SubDomainRegistrar.configureDomain(
-          namehash('ens.eth'),
+          namehash('eth'),
+          labelhash('ens'),
           '1000000',
           0
         )
@@ -189,7 +194,7 @@ describe('Subdomain Registrar and Wrapper', function () {
         )
       })
 
-      it('Should be able to configure a new domain and then register fails because namehash does not match', async function () {
+      it('Should be able to configure a new domain and then register fails because namehash does not match', async () => {
         const [owner, addr1] = await ethers.getSigners()
         const account = await owner.getAddress()
 
@@ -211,21 +216,26 @@ describe('Subdomain Registrar and Wrapper', function () {
               value: '1000000',
             }
           )
-        ).to.be.revertedWith('namehash does not match in calldata')
+        ).to.be.revertedWith('revert invalid node for multicall')
       })
     })
 
-    describe('RestrictedNameWrapper', function () {
-      it('wrap() wraps a name with the ERC721 standard and fuses', async function () {
+    describe('RestrictedNameWrapper', () => {
+      it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
         const [owner, addr1] = await ethers.getSigners()
         const account = await owner.getAddress()
         await EnsRegistry.setSubnodeOwner(
           namehash('eth'),
-          utils.keccak256(utils.toUtf8Bytes('wrapped')),
+          labelhash('wrapped'),
           account
         )
         await EnsRegistry.setApprovalForAll(RestrictedNameWrapper.address, true)
-        await RestrictedNameWrapper.wrap(namehash('wrapped.eth'), 255, account)
+        await RestrictedNameWrapper.wrap(
+          namehash('eth'),
+          labelhash('wrapped'),
+          255,
+          account
+        )
         const ownerOfWrappedEth = await RestrictedNameWrapper.ownerOf(
           namehash('wrapped.eth')
         )
