@@ -5,7 +5,8 @@ import "./Resolver.sol";
 abstract contract IRestrictedNameWrapper is IERC721 {
     function wrap(
         bytes32 node,
-        uint256 fuses,
+        bytes32 label,
+        uint256 _fuses,
         address wrappedOwner
     ) public virtual;
 
@@ -40,5 +41,5 @@ abstract contract IRestrictedNameWrapper is IERC721 {
     uint256 public constant CAN_SET_TTL = 4;
     uint256 public constant CAN_CREATE_SUBDOMAIN = 8;
     uint256 public constant CAN_REPLACE_SUBDOMAIN = 16;
-    uint256 public constant CAN_DO_EVERYTHING = 255;
+    uint256 public constant CAN_DO_EVERYTHING = 0xfff; // set to 64 f's
 }

@@ -1,16 +1,15 @@
 import "../interfaces/ENS.sol";
+import "../interfaces/BaseRegistrar.sol";
 import "../interfaces/Resolver.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../interfaces/IRestrictedNameWrapper.sol";
 import "hardhat/console.sol";
 
-// todo
-// add ERC721
-// change ownership to use erc721
-// mint token on wrap
-
 contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
     ENS public ens;
+    bytes32
+        public constant ETH_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+
     mapping(bytes32 => uint256) public fuses;
 
     constructor(ENS _ens) public ERC721("ENS Name", "ENS") {
@@ -73,11 +72,29 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         return id;
     }
 
+    function wrapETH2LD(
+        uint256 tokenId,
+        uint256 _fuses,
+        address wrappedOwner
+    ) public {
+        BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
+        // BaseRegistrar.transferFrom(tokenId, address(this));
+        // BaseRegistrar.reclaim(tokenId, address(this))
+        // wrap()
+        // auto burn canUnwrap
+    }
+
     function wrap(
         bytes32 node,
+        bytes32 label,
         uint256 _fuses,
         address wrappedOwner
     ) public override {
+        //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
+        if (canReplaceSubdomain(node)) {
+            _fuses = CAN_DO_EVERYTHING;
+        }
+        //TODO modify the rest to use subnode label/node
         fuses[node] = _fuses;
         address owner = ens.owner(node);
         require(
@@ -101,19 +118,20 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         ens.setOwner(node, owner);
     }
 
-    function burnFuses(bytes32 node, uint256 _fuses) public ownerOnly(node) {
-        fuses[node] &= _fuses;
-    }
-
-    function setSubnodeRecordAndWrap(
+    function burnFuses(
         bytes32 node,
         bytes32 label,
-        address owner,
-        address resolver,
-        uint64 ttl
-    ) external {
-        setSubnodeRecord(node, label, address(this), resolver, ttl);
-        mintERC721(uint256(node), owner, "");
+        uint256 _fuses
+    ) public ownerOnly(node) {
+        // Check parent domain. Can't clear the flag if the parent hasn't been burned canUnwrap/. Error
+        BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
+        require(
+            !canReplaceSubdomain(node) ||
+                (registrar.ownerOf(uint256(label)) == address(this) &&
+                    node == ETH_NODE)
+        );
+        bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        fuses[subnode] &= _fuses;
     }
 
     function setRecord(
@@ -136,15 +154,14 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         uint64 ttl
     ) public ownerOnly(node) {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        if (canCreateSubdomain(node) && canReplaceSubdomain(node)) {
-            return ens.setSubnodeRecord(node, label, owner, resolver, ttl);
-        } else if (canCreateSubdomain(node)) {
-            require(
-                ens.owner(subnode) == address(0),
-                "Subdomain already registered"
-            );
-            return ens.setSubnodeRecord(node, label, owner, resolver, ttl);
-        }
+        address owner = ens.owner(subnode);
+        require(
+            (owner == address(0) && canCreateSubdomain(node)) ||
+                (owner != address(0) && canReplaceSubdomain(node))
+        );
+        //TODO repeat this on setSubnodeOwner()
+
+        return ens.setSubnodeRecord(node, label, owner, resolver, ttl);
     }
 
     function setSubnodeOwner(
@@ -205,3 +222,22 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
 
 // a. ENS.setApprovalForAll(SubdomainRegistrar, true)
 // b. RestrictiveWrapper.setApprovaForAll(SubdomainRegistrar, true)
+
+// Nick's feedback
+
+// remove ERC721 from OpenZeppelin and make our own
+
+// minting takes 120k more gas. Check for another ERC721 contract that is lighter weight.
+
+// When checking canUnwrap - need to ch
+// When calling
+
+// Options for wrapping. Approve Wrapper + wrap. Use ERC721 onERC721Received hook and add calldata to wrap it (safeTransferFrom)
+// Do both safety
+// Write the wrapped function
+// Send ETH Registrar token to ourselves, so we have control over it (burn). Identify if node is .eth
+
+//Combine CAN_SET_RESOLVER and CAN_SET_TTL to one fuse
+// Add events so subgraph can track
+
+//Registry for own fuse

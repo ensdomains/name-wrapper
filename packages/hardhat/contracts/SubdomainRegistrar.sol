@@ -83,65 +83,65 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         emit DomainConfigured(node);
     }
 
-    // function doRegistration(
-    //     bytes32 node,
-    //     bytes32 label,
-    //     address subdomainOwner,
-    //     Resolver resolver,
-    //     bytes[] memory data
-    // ) internal {
-    //     // Get the subdomain so we can configure it
-    //     console.log("doRegistration", address(this));
-    //     wrapper.setSubnodeRecordAndWrap(
-    //         node,
-    //         label,
-    //         address(this),
-    //         address(resolver),
-    //         0,
-    //         255
-    //     );
-    //     //set the owner to this contract so it can setAddr()
+    function doRegistration(
+        bytes32 node,
+        bytes32 label,
+        address subdomainOwner,
+        Resolver resolver,
+        bytes[] memory data
+    ) internal {
+        // Get the subdomain so we can configure it
+        console.log("doRegistration", address(this));
+        wrapper.setSubnodeRecordAndWrap(
+            node,
+            label,
+            address(this),
+            address(resolver),
+            0,
+            255
+        );
+        //set the owner to this contract so it can setAddr()
 
-    //     bytes32 subnode = keccak256(abi.encodePacked(node, label));
-    //     address owner = ens.owner(subnode);
-    //     console.log("owner in registry", owner);'
-    //     wrapper.setOwner(subnode, subdomainOwner);
+        bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        address owner = ens.owner(subnode);
+        console.log("owner in registry", owner);'
+        wrapper.setOwner(subnode, subdomainOwner);
 
-    //     // Problem - Current Public Resolver checks ENS registry for ownership. Owner will be the Restrivtve Wrapper
-    //     // Possible solution A - use PublicResolver that knows how to check Restrictive Wrapper
-    //     // Possible solution B - Deploy an OwnerResolver for each subdomain name
-    //     // Possible solution C - Separate Public Resolver that uses Restrictive Name Wrapper
-    //     // Possible solution D - wrap setAuthorisation inside RestrictedWrapper - X (don't want the wrapper to know about resolvers)
+        // Problem - Current Public Resolver checks ENS registry for ownership. Owner will be the Restrivtve Wrapper
+        // Possible solution A - use PublicResolver that knows how to check Restrictive Wrapper
+        // Possible solution B - Deploy an OwnerResolver for each subdomain name
+        // Possible solution C - Separate Public Resolver that uses Restrictive Name Wrapper
+        // Possible solution D - wrap setAuthorisation inside RestrictedWrapper - X (don't want the wrapper to know about resolvers)
 
-    //     // Set the address record on the resolver
-    //     // console.log("setAuthorisationForResolver");
-    //     // wrapper.setAuthorisationForResolver(
-    //     //     subnode,
-    //     //     address(this),
-    //     //     true,
-    //     //     resolver
-    //     // );
-    //     // console.log("setAuthorisationForResolver");
-    //     // wrapper.setAuthorisationForResolver(
-    //     //     subnode,
-    //     //     address(owner),
-    //     //     true,
-    //     //     resolver
-    //     // );
-    //     // check calldata for
-    //     // if (resolver.checkCallData(node, data)) {
-    //     //     resolver.multicall(subnode, data);
-    //     // }
-    //     address addrVar = resolver.addr(subnode);
-    //     console.log(addrVar);
-    //     // Currently fails as owner is stil the Restrictive Wrapper
+        // Set the address record on the resolver
+        // console.log("setAuthorisationForResolver");
+        // wrapper.setAuthorisationForResolver(
+        //     subnode,
+        //     address(this),
+        //     true,
+        //     resolver
+        // );
+        // console.log("setAuthorisationForResolver");
+        // wrapper.setAuthorisationForResolver(
+        //     subnode,
+        //     address(owner),
+        //     true,
+        //     resolver
+        // );
+        // check calldata for
+        // if (resolver.checkCallData(node, data)) {
+        //     resolver.multicall(subnode, data);
+        // }
+        address addrVar = resolver.addr(subnode);
+        console.log(addrVar);
+        // Currently fails as owner is stil the Restrictive Wrapper
 
-    //     // check if the address is != 0 and then set addr
-    //     // reason to check some resolvers don't have setAddr
+        // check if the address is != 0 and then set addr
+        // reason to check some resolvers don't have setAddr
 
-    //     // Pass ownership of the new subdomain to the registrant
-    //     wrapper.setOwner(subnode, subdomainOwner);
-    // }
+        // Pass ownership of the new subdomain to the registrant
+        wrapper.setOwner(subnode, subdomainOwner);
+    }
 
     function register(
         bytes32 node,
@@ -192,36 +192,45 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         //     domain.owner.transfer(total);
         // }
 
+
         // Register the domain
         if (subdomainOwner == address(0x0)) {
             subdomainOwner = msg.sender;
         }
 
-        wrapper.setSubnodeRecordAndWrap(
-            node,
-            subdomainLabel,
-            address(this),
-            address(resolver),
-            0,
-            255
-        );
-        //set the owner to this contract so it can setAddr()
+        // bytes32 node,
+        // bytes32 label,
+        // address subdomainOwner,
+        // Resolver resolver,
+        // bytes[] memory data
 
-        bytes32 subnode = keccak256(abi.encodePacked(node, subdomainLabel));
-        address owner = ens.owner(subnode);
-        console.log("owner in registry", owner);
-        Resolver resolverInstance = Resolver(resolver);
-        console.log("data.length");
-        console.log(data.length);
-        if (data.length > 0) {
-            require(
-                resolverInstance.checkCallData(subnode, data),
-                "namehash does not match in calldata"
-            );
-            resolverInstance.multicall(data);
-        }
+        doRegistration(node, label, subdomainOwner, resolver, data);
 
-        wrapper.setOwner(subnode, subdomainOwner);
+        // wrapper.setSubnodeRecordAndWrap(
+        //     node,
+        //     subdomainLabel,
+        //     address(this),
+        //     address(resolver),
+        //     0,
+        //     255
+        // );
+        // //set the owner to this contract so it can setAddr()
+
+        // bytes32 subnode = keccak256(abi.encodePacked(node, subdomainLabel));
+        // address owner = ens.owner(subnode);
+        // console.log("owner in registry", owner);
+        // Resolver resolverInstance = Resolver(resolver);
+        // console.log("data.length");
+        // console.log(data.length);
+        // if (data.length > 0) {
+        //     require(
+        //         resolverInstance.checkCallData(subnode, data),
+        //         "namehash does not match in calldata"
+        //     );
+        //     resolverInstance.multicall(data);
+        // }
+
+        // wrapper.setOwner(subnode, subdomainOwner);
 
         // Commenting out for now because of following error:
         // "CompilerError: Stack too deep, try removing local variables"
