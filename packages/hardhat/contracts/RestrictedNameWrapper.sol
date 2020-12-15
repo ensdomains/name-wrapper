@@ -195,8 +195,6 @@ contract RestrictedNameWrapper is ERC721, IRestrictedNameWrapper {
         override
         ownerOnly(node)
     {
-        console.log("node");
-        console.logBytes32(node);
         require(
             canSetResolver(node),
             "Fuse already blown for setting resolver"
