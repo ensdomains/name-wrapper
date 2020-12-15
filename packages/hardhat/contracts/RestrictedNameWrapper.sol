@@ -1,7 +1,7 @@
 import "../interfaces/ENS.sol";
 import "../interfaces/BaseRegistrar.sol";
 import "../interfaces/Resolver.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "./ERC721/ERC721.sol";
 import "../interfaces/IRestrictedNameWrapper.sol";
 import "hardhat/console.sol";
 
