@@ -1,12 +1,15 @@
 import "../interfaces/ENS.sol";
 import "../interfaces/BaseRegistrar.sol";
 import "../interfaces/Resolver.sol";
-import "./ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../interfaces/IRestrictedNameWrapper.sol";
 import "hardhat/console.sol";
 
 contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrapper {
     ENS public ens;
+    BaseRegistrar public registrar;
+    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
+
     bytes32
         public constant ETH_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
 
@@ -14,7 +17,7 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
 
     constructor(ENS _ens) ERC721("ENS Name", "ENS") {
         ens = _ens;
-        BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
+        registrar = BaseRegistrar(ens.owner(ETH_NODE));
     }
 
     modifier ownerOnly(bytes32 node) {
@@ -217,7 +220,7 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
         ens.setTTL(node, ttl);
     }
 
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data){
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) override public returns (bytes4){
         //check if it's the eth registrar ERC721
         require(registrar.ownerOf(tokenId) == from, "Wrapper only supports .eth ERC721 token transfers");
         wrapETH2LD(tokenId, 255, from);

@@ -1,11 +1,12 @@
 const fs = require('fs')
 const chalk = require('chalk')
 const { config, ethers } = require('hardhat')
-const { utils } = ethers
+const { utils, BigNumber: BN } = ethers
 const { use, expect } = require('chai')
 const { solidity } = require('ethereum-waffle')
 const n = require('eth-ens-namehash')
 const namehash = n.hash
+const { loadENSContract } = require('../utils/contracts')
 
 use(solidity)
 
@@ -73,30 +74,129 @@ async function deploy(name, _args) {
 
 describe('Subdomain Registrar and Wrapper', () => {
   let ENSRegistry
+  let BaseRegistrar
   let RestrictedNameWrapper
   let PublicResolver
   let SubDomainRegistrar
+  let LinearPriceOracle
 
   describe('SubdomainRegistrar', () => {
     it('Should deploy ENS contracts', async () => {
-      EnsRegistry = await deploy('ENSRegistry')
+      const [owner] = await ethers.getSigners()
+      const registryJSON = loadENSContract('ens', 'ENSRegistry')
+      const baseRegistrarJSON = loadENSContract(
+        'ethregistrar',
+        'BaseRegistrarImplementation'
+      )
+      const controllerJSON = loadENSContract(
+        'ethregistrar',
+        'ETHRegistrarController'
+      )
+      const dummyOracleJSON = loadENSContract('ethregistrar', 'DummyOracle')
+      const linearPremiumPriceOracleJSON = loadENSContract(
+        'ethregistrar',
+        'LinearPremiumPriceOracle'
+      )
+
+      const registryContractFactory = new ethers.ContractFactory(
+        registryJSON.abi,
+        registryJSON.bytecode,
+        owner
+      )
+      EnsRegistry = await registryContractFactory.deploy()
+
       const ROOT_NODE =
         '0x0000000000000000000000000000000000000000000000000000000000000000'
 
-      const rootOwner = await EnsRegistry.owner(ROOT_NODE)
-      const [owner, addr1] = await ethers.getSigners()
+      try {
+        const rootOwner = await EnsRegistry.owner(ROOT_NODE)
+      } catch (e) {
+        console.log('failing on rootOwner', e)
+      }
+      console.log('succeeded on root owner')
       const account = await owner.getAddress()
+
+      BaseRegistrar = await new ethers.ContractFactory(
+        baseRegistrarJSON.abi,
+        baseRegistrarJSON.bytecode,
+        owner
+      ).deploy(EnsRegistry.address, namehash('eth'))
+
+      await BaseRegistrar.addController(account)
+
+      DummyOracle = await new ethers.ContractFactory(
+        dummyOracleJSON.abi,
+        dummyOracleJSON.bytecode,
+        owner
+      ).deploy('20000000000')
+
+      const latestAnswer = await DummyOracle.latestAnswer()
+      console.log(latestAnswer.toString())
+
+      console.log('Dummy USD Rate', { latestAnswer })
+      // Premium starting price: 10 ETH = 2000 USD
+      const premium = BN.from('2000000000000000000000') // 2000 * 1e18
+      const decreaseDuration = BN.from(28 * 24 * 60 * 60)
+      const decreaseRate = premium.div(decreaseDuration)
+
+      LinearPriceOracle = await new ethers.ContractFactory(
+        linearPremiumPriceOracleJSON.abi,
+        linearPremiumPriceOracleJSON.bytecode,
+        owner
+      ).deploy(
+        DummyOracle.address,
+        // Oracle prices from https://etherscan.io/address/0xb9d374d0fe3d8341155663fae31b7beae0ae233a#events
+        // 0,0, 127, 32, 1
+        [
+          0,
+          0,
+          BN.from(20294266869609),
+          BN.from(5073566717402),
+          BN.from(158548959919),
+        ],
+        premium,
+        decreaseRate
+      )
+      // const linearPriceOracle = await deploy(
+      //   web3,
+      //   accounts[0],
+      //   linearPremiumPriceOracleJSON,
+      //   dummyOracle._address,
+      //   // Oracle prices from https://etherscan.io/address/0xb9d374d0fe3d8341155663fae31b7beae0ae233a#events
+      //   // 0,0, 127, 32, 1
+      //   [
+      //     0,
+      //     0,
+      //     BN.from(20294266869609),
+      //     BN.from(5073566717402),
+      //     BN.from(158548959919),
+      //   ],
+      //   premium,
+      //   decreaseRate
+      // )
+      // const linearPriceOracleContract = linearPriceOracle.methods
+      // const newController = await deploy(
+      //   web3,
+      //   accounts[0],
+      //   controllerJSON,
+      //   newBaseRegistrar._address,
+      //   linearPriceOracle._address,
+      //   2, // 10 mins in seconds
+      //   86400 // 24 hours in seconds
+      // )
+      // const newControllerContract = newController.methods
 
       RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
         EnsRegistry.address,
       ])
+
       PublicResolver = await deploy('PublicResolver', [
-        addresses['ENSRegistry'],
+        EnsRegistry.address,
         addresses['RestrictedNameWrapper'],
       ])
 
       SubDomainRegistrar = await deploy('SubdomainRegistrar', [
-        addresses['ENSRegistry'],
+        EnsRegistry.address,
         addresses['RestrictedNameWrapper'],
       ])
 
@@ -127,11 +227,11 @@ describe('Subdomain Registrar and Wrapper', () => {
       console.log('ethOwner', ethOwner)
       console.log('ensEthOwner', ensEthOwner)
 
-      // console.log(
-      //   'ens.setApprovalForAll RestrictedNameWrapper',
-      //   account,
-      //   addresses['RestrictedNameWrapper']
-      // )
+      console.log(
+        'ens.setApprovalForAll RestrictedNameWrapper',
+        account,
+        addresses['RestrictedNameWrapper']
+      )
       // // make wrapper approved for account owning ens.eth
       // await EnsRegistry.setApprovalForAll(addresses['RestrictedNameWrapper'], true)
 
@@ -195,7 +295,7 @@ describe('Subdomain Registrar and Wrapper', () => {
       })
 
       it('Should be able to configure a new domain and then register fails because namehash does not match', async () => {
-        const [owner, addr1] = await ethers.getSigners()
+        const [owner] = await ethers.getSigners()
         const account = await owner.getAddress()
 
         const tx = PublicResolver.interface.encodeFunctionData(
@@ -222,7 +322,7 @@ describe('Subdomain Registrar and Wrapper', () => {
 
     describe('RestrictedNameWrapper', () => {
       it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
-        const [owner, addr1] = await ethers.getSigners()
+        const [owner] = await ethers.getSigners()
         const account = await owner.getAddress()
         await EnsRegistry.setSubnodeOwner(
           namehash('eth'),
