@@ -17,8 +17,8 @@ struct Domain {
 // SPDX-License-Identifier: MIT
 contract SubdomainRegistrar is ISubdomainRegistrar {
     // namehash('eth')
-    bytes32
-        public constant TLD_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 public constant ETH_NODE =
+        0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
 
     bool public stopped = false;
     address public registrarOwner;
@@ -62,6 +62,11 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
     ) public {
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         Domain storage domain = domains[node];
+
+        // if (parentNode == ETH_NODE) {
+        //     // check if it's eth and then wrap with wrap2ld
+        //     wrapper.wrapETH2LD(uint256(label), 255, msg.sender);
+        // }
 
         //check if I'm the owner
         if (ens.owner(node) != address(wrapper)) {
@@ -112,19 +117,15 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
 
         address addrVar = resolver.addr(subnode);
         console.log(addrVar);
-        
+
         // Pass ownership of the new subdomain to the registrant
         wrapper.setOwner(subnode, subdomainOwner);
-        
 
         // Problem - Current Public Resolver checks ENS registry for ownership. Owner will be the Restrivtve Wrapper
         // Possible solution A - use PublicResolver that knows how to check Restrictive Wrapper
 
-        
-
         // check if the address is != 0 and then set addr
         // reason to check some resolvers don't have setAddr
-
     }
 
     function register(
@@ -134,7 +135,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         address payable referrer,
         address resolver,
         bytes[] calldata data
-    ) external override payable notStopped {
+    ) external payable override notStopped {
         address subdomainOwner = _subdomainOwner;
         bytes32 subdomainLabel = keccak256(bytes(subdomain));
 
@@ -165,8 +166,8 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
             referrer != address(0x0) &&
             referrer != wrapper.ownerOf(uint256(node))
         ) {
-            uint256 referralFee = (domain.price * domain.referralFeePPM) /
-                1000000;
+            uint256 referralFee =
+                (domain.price * domain.referralFeePPM) / 1000000;
             referrer.transfer(referralFee);
             total -= referralFee;
         }

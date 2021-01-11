@@ -5,13 +5,17 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../interfaces/IRestrictedNameWrapper.sol";
 import "hardhat/console.sol";
 
-contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrapper {
+contract RestrictedNameWrapper is
+    ERC721,
+    IERC721Receiver,
+    IRestrictedNameWrapper
+{
     ENS public ens;
     BaseRegistrar public registrar;
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
-    bytes32
-        public constant ETH_NODE = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 public constant ETH_NODE =
+        0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
 
     mapping(bytes32 => uint256) public fuses;
 
@@ -27,8 +31,8 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
 
     function isOwnerOrApproved(bytes32 node, address addr)
         public
-        override
         view
+        override
         returns (bool)
     {
         //memory owner = ;
@@ -81,10 +85,12 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
         uint256 tokenId,
         uint256 _fuses,
         address wrappedOwner
-    ) public {
-        BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
-        // BaseRegistrar.transferFrom(tokenId, address(this));
-        // BaseRegistrar.reclaim(tokenId, address(this))
+    ) public override {
+        //BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
+        registrar.ownerOf(tokenId);
+        //console.log(currentOwner);
+        //registrar.transferFrom(currentOwner, address(this), tokenId);
+        // registrar.reclaim(tokenId, address(this))
         // wrap()
         // Burn the original ETH registrar token
         // auto burn canUnwrap
@@ -103,8 +109,6 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         fuses[node] = _fuses;
         address owner = ens.owner(node);
-        console.log("owner");
-        console.log(owner);
         require(
             owner == msg.sender || ens.isApprovedForAll(owner, msg.sender),
             "not approved and isn't sender"
@@ -220,9 +224,17 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
         ens.setTTL(node, ttl);
     }
 
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) override public returns (bytes4){
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) public override returns (bytes4) {
         //check if it's the eth registrar ERC721
-        require(registrar.ownerOf(tokenId) == from, "Wrapper only supports .eth ERC721 token transfers");
+        require(
+            registrar.ownerOf(tokenId) == from,
+            "Wrapper only supports .eth ERC721 token transfers"
+        );
         wrapETH2LD(tokenId, 255, from);
         //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
@@ -252,4 +264,3 @@ contract RestrictedNameWrapper is ERC721, IERC721Receiver, IRestrictedNameWrappe
 
 //Combine CAN_SET_RESOLVER and CAN_SET_TTL to one fuse
 // Add events so subgraph can track
-

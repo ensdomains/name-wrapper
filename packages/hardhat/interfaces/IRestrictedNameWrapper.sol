@@ -3,6 +3,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Resolver.sol";
 
 abstract contract IRestrictedNameWrapper is IERC721 {
+    function wrapETH2LD(
+        uint256 tokenId,
+        uint256 _fuses,
+        address wrappedOwner
+    ) public virtual;
+
     function wrap(
         bytes32 node,
         bytes32 label,

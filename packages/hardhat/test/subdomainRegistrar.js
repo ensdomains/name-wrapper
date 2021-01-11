@@ -75,6 +75,7 @@ async function deploy(name, _args) {
 describe('Subdomain Registrar and Wrapper', () => {
   let ENSRegistry
   let BaseRegistrar
+  let EthRegistrarController
   let RestrictedNameWrapper
   let PublicResolver
   let SubDomainRegistrar
@@ -122,13 +123,21 @@ describe('Subdomain Registrar and Wrapper', () => {
         owner
       ).deploy(EnsRegistry.address, namehash('eth'))
 
+      console.log(`*** BaseRegistrar deployed at ${BaseRegistrar.address} *** `)
+
       await BaseRegistrar.addController(account)
+
+      console.log(
+        `*** BaseRegistrar.addController() -- Added account ${account} *** `
+      )
 
       DummyOracle = await new ethers.ContractFactory(
         dummyOracleJSON.abi,
         dummyOracleJSON.bytecode,
         owner
       ).deploy('20000000000')
+
+      console.log('*** DummyOracle deployed *** ')
 
       const latestAnswer = await DummyOracle.latestAnswer()
       console.log(latestAnswer.toString())
@@ -157,24 +166,22 @@ describe('Subdomain Registrar and Wrapper', () => {
         premium,
         decreaseRate
       )
-      // const linearPriceOracle = await deploy(
-      //   web3,
-      //   accounts[0],
-      //   linearPremiumPriceOracleJSON,
-      //   dummyOracle._address,
-      //   // Oracle prices from https://etherscan.io/address/0xb9d374d0fe3d8341155663fae31b7beae0ae233a#events
-      //   // 0,0, 127, 32, 1
-      //   [
-      //     0,
-      //     0,
-      //     BN.from(20294266869609),
-      //     BN.from(5073566717402),
-      //     BN.from(158548959919),
-      //   ],
-      //   premium,
-      //   decreaseRate
-      // )
-      // const linearPriceOracleContract = linearPriceOracle.methods
+
+      console.log('*** Linear Price Oracle deployed *** ')
+
+      EthRegistrarController = await new ethers.ContractFactory(
+        controllerJSON.abi,
+        controllerJSON.bytecode,
+        owner
+      ).deploy(
+        BaseRegistrar.address,
+        LinearPriceOracle.address,
+        2, // 10 mins in seconds
+        86400 // 24 hours in seconds
+      )
+
+      console.log('*** EthRegistrarController deployed *** ')
+
       // const newController = await deploy(
       //   web3,
       //   accounts[0],
@@ -207,18 +214,13 @@ describe('Subdomain Registrar and Wrapper', () => {
         account
       )
 
-      // setup vitalik.eth
-      await EnsRegistry.setSubnodeOwner(
-        namehash('eth'),
-        utils.keccak256(utils.toUtf8Bytes('vitalik')),
-        account
-      )
+      // give .eth back to registrar
 
-      // setup ens.eth
+      // make base registrar owner of eth
       await EnsRegistry.setSubnodeOwner(
-        namehash('eth'),
-        utils.keccak256(utils.toUtf8Bytes('ens')),
-        account
+        ROOT_NODE,
+        labelhash('eth'),
+        BaseRegistrar.address
       )
 
       const ethOwner = await EnsRegistry.owner(namehash('eth'))
@@ -251,10 +253,19 @@ describe('Subdomain Registrar and Wrapper', () => {
         SubDomainRegistrar.address,
         true
       )
+
+      //make sure base registrar is owner of eth TLD
+
+      const ownerOfEth = await EnsRegistry.owner(namehash('eth'))
+
+      expect(ownerOfEth).to.equal(BaseRegistrar.address)
     })
 
     describe('SubDomainRegistrar configureDomain', () => {
       it('Should be able to configure a new domain', async () => {
+        const [owner] = await ethers.getSigners()
+        const account = await owner.getAddress()
+        await BaseRegistrar.register(labelhash('vitalik'), account, 84600)
         await SubDomainRegistrar.configureDomain(
           namehash('eth'),
           labelhash('vitalik'),
@@ -266,8 +277,10 @@ describe('Subdomain Registrar and Wrapper', () => {
       })
 
       it('Should be able to configure a new domain and then register', async () => {
-        const [owner, addr1] = await ethers.getSigners()
+        const [owner] = await ethers.getSigners()
         const account = await owner.getAddress()
+
+        await BaseRegistrar.register(labelhash('ens'), account, 84600)
 
         await SubDomainRegistrar.configureDomain(
           namehash('eth'),
@@ -324,11 +337,15 @@ describe('Subdomain Registrar and Wrapper', () => {
       it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
         const [owner] = await ethers.getSigners()
         const account = await owner.getAddress()
-        await EnsRegistry.setSubnodeOwner(
-          namehash('eth'),
-          labelhash('wrapped'),
-          account
-        )
+
+        //TODO change to register via registrar
+        // await EnsRegistry.setSubnodeOwner(
+        //   namehash('eth'),
+        //   labelhash('wrapped'),
+        //   account
+        // )
+
+        await BaseRegistrar.register(labelhash('wrapped'), account, 84600)
         await EnsRegistry.setApprovalForAll(RestrictedNameWrapper.address, true)
         await RestrictedNameWrapper.wrap(
           namehash('eth'),
