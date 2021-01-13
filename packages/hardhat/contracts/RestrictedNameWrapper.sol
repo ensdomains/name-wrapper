@@ -19,9 +19,9 @@ contract RestrictedNameWrapper is
 
     mapping(bytes32 => uint256) public fuses;
 
-    constructor(ENS _ens) ERC721("ENS Name", "ENS") {
+    constructor(ENS _ens, BaseRegistrar _registrar) ERC721("ENS Name", "ENS") {
         ens = _ens;
-        registrar = BaseRegistrar(ens.owner(ETH_NODE));
+        registrar = _registrar;
     }
 
     modifier ownerOnly(bytes32 node) {

@@ -195,6 +195,7 @@ describe('Subdomain Registrar and Wrapper', () => {
 
       RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
         EnsRegistry.address,
+        BaseRegistrar.address,
       ])
 
       PublicResolver = await deploy('PublicResolver', [
