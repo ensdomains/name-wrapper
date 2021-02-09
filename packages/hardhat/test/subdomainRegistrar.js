@@ -278,8 +278,8 @@ describe('Subdomain Registrar and Wrapper', () => {
       })
 
       it('Should be able to configure a new domain and then register', async () => {
-        const [owner] = await ethers.getSigners()
-        const account = await owner.getAddress()
+        const [signer] = await ethers.getSigners()
+        const account = await signer.getAddress()
 
         await BaseRegistrar.register(labelhash('ens'), account, 84600)
 
@@ -309,8 +309,8 @@ describe('Subdomain Registrar and Wrapper', () => {
       })
 
       it('Should be able to configure a new domain and then register fails because namehash does not match', async () => {
-        const [owner] = await ethers.getSigners()
-        const account = await owner.getAddress()
+        const [signer] = await ethers.getSigners()
+        const account = await signer.getAddress()
 
         const tx = PublicResolver.interface.encodeFunctionData(
           'setAddr(bytes32,uint256,bytes)',
@@ -336,8 +336,8 @@ describe('Subdomain Registrar and Wrapper', () => {
 
     describe('RestrictedNameWrapper', () => {
       it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
-        const [owner] = await ethers.getSigners()
-        const account = await owner.getAddress()
+        const [signer] = await ethers.getSigners()
+        const account = await signer.getAddress()
 
         //TODO change to register via registrar
         // await EnsRegistry.setSubnodeOwner(
@@ -358,6 +358,53 @@ describe('Subdomain Registrar and Wrapper', () => {
           namehash('wrapped.eth')
         )
         expect(ownerOfWrappedEth).to.equal(account)
+      })
+
+      it('wrap2Ld() wraps a name with the ERC721 standard and fuses', async () => {
+        const [signer] = await ethers.getSigners()
+        const account = await signer.getAddress()
+
+        await BaseRegistrar.register(labelhash('wrapped2'), account, 84600)
+
+        //allow the restricted name wrappper to transfer the name to itself and reclaim it
+        await BaseRegistrar.setApprovalForAll(
+          RestrictedNameWrapper.address,
+          true
+        )
+
+        await RestrictedNameWrapper.wrapETH2LD(
+          labelhash('wrapped2'),
+          255,
+          account
+        )
+
+        const ownerInRegistry = await EnsRegistry.owner(
+          namehash('wrapped2.eth')
+        )
+
+        //make sure reclaim claimed ownership for the wrapper in registry
+        expect(ownerInRegistry).to.equal(RestrictedNameWrapper.address)
+        const ownerOfWrappedEth = await RestrictedNameWrapper.ownerOf(
+          namehash('wrapped2.eth')
+        )
+
+        //make sure owner in the wrapper is the user
+
+        expect(ownerOfWrappedEth).to.equal(account)
+        const ownerInRegistrar = await BaseRegistrar.ownerOf(
+          labelhash('wrapped2')
+        )
+
+        // make sure registrar ERC721 has been burned
+        expect(ownerInRegistrar).to.equal(
+          '0x000000000000000000000000000000000000dEaD'
+        )
+
+        // make sure it can't be unwrapped
+        const canUnwrap = await RestrictedNameWrapper.canUnwrap(
+          namehash('wrapped2.eth')
+        )
+        console.log(canUnwrap)
       })
     })
   })

@@ -82,18 +82,34 @@ contract RestrictedNameWrapper is
     }
 
     function wrapETH2LD(
-        uint256 tokenId,
+        bytes32 label,
         uint256 _fuses,
         address wrappedOwner
     ) public override {
-        //BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
-        registrar.ownerOf(tokenId);
-        //console.log(currentOwner);
-        //registrar.transferFrom(currentOwner, address(this), tokenId);
-        // registrar.reclaim(tokenId, address(this))
-        // wrap()
+        // create the namehash for the name using .eth and the label
+        bytes32 node = keccak256(abi.encodePacked(ETH_NODE, label));
+
+        // wrapped token uses whole node
+        uint256 wrapperTokenId = uint256(node);
+
+        // .eth registar uses the labelhash of the node
+        uint256 tokenId = uint256(label);
+
+        // transfer the token from the user to this contract
+        address currentOwner = registrar.ownerOf(tokenId);
+        registrar.transferFrom(currentOwner, address(this), tokenId);
+
+        // transfer the ens record back to the new owner (this contract)
+        registrar.reclaim(tokenId, address(this));
+
+        // add fuses, but stop it being unwrapped
+        fuses[node] = _fuses - CAN_UNWRAP;
+
+        // mint a new ERC721 token
+        mintERC721(wrapperTokenId, wrappedOwner, "");
+
         // Burn the original ETH registrar token
-        // auto burn canUnwrap
+        registrar.transferFrom(address(this), address(0xdead), tokenId);
     }
 
     function wrap(
@@ -134,7 +150,7 @@ contract RestrictedNameWrapper is
         bytes32 node,
         bytes32 label,
         uint256 _fuses
-    ) public ownerOnly(node) {
+    ) public ownerOnly(keccak256(abi.encodePacked(node, label))) {
         // Check parent domain. Can't clear the flag if the parent hasn't been burned canUnwrap/. Error
         BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
         require(
@@ -235,7 +251,7 @@ contract RestrictedNameWrapper is
             registrar.ownerOf(tokenId) == from,
             "Wrapper only supports .eth ERC721 token transfers"
         );
-        wrapETH2LD(tokenId, 255, from);
+        wrapETH2LD(bytes32(tokenId), 255, from);
         //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
     }
@@ -249,8 +265,6 @@ contract RestrictedNameWrapper is
 // b. RestrictiveWrapper.setApprovaForAll(SubdomainRegistrar, true)
 
 // Nick's feedback
-
-// remove ERC721 from OpenZeppelin and make our own
 
 // minting takes 120k more gas. Check for another ERC721 contract that is lighter weight.
 

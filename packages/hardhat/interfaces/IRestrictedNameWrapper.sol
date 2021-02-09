@@ -4,7 +4,7 @@ import "./Resolver.sol";
 
 abstract contract IRestrictedNameWrapper is IERC721 {
     function wrapETH2LD(
-        uint256 tokenId,
+        bytes32 label,
         uint256 _fuses,
         address wrappedOwner
     ) public virtual;
