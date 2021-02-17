@@ -404,7 +404,29 @@ describe('Subdomain Registrar and Wrapper', () => {
         const canUnwrap = await RestrictedNameWrapper.canUnwrap(
           namehash('wrapped2.eth')
         )
-        console.log(canUnwrap)
+      })
+
+      it('can send ERC721 token to restricted wrapper', async () => {
+        const [signer] = await ethers.getSigners()
+        const account = await signer.getAddress()
+        const tokenId = labelhash('send2contract')
+        const wrappedTokenId = namehash('send2contract.eth')
+
+        await BaseRegistrar.register(tokenId, account, 84600)
+
+        const ownerInRegistrar = await BaseRegistrar.ownerOf(tokenId)
+
+        await BaseRegistrar['safeTransferFrom(address,address,uint256)'](
+          account,
+          RestrictedNameWrapper.address,
+          tokenId
+        )
+
+        const ownerInWrapper = await RestrictedNameWrapper.ownerOf(
+          wrappedTokenId
+        )
+
+        expect(ownerInWrapper).to.equal(account)
       })
     })
   })

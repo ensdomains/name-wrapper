@@ -248,7 +248,8 @@ contract RestrictedNameWrapper is
     ) public override returns (bytes4) {
         //check if it's the eth registrar ERC721
         require(
-            registrar.ownerOf(tokenId) == from,
+            // Check erc721 .eth ownership is this contract
+            registrar.ownerOf(tokenId) == address(this),
             "Wrapper only supports .eth ERC721 token transfers"
         );
         wrapETH2LD(bytes32(tokenId), 255, from);
