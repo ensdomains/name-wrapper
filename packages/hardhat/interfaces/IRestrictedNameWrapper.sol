@@ -43,9 +43,8 @@ abstract contract IRestrictedNameWrapper is IERC721 {
     function setOwner(bytes32 node, address owner) public virtual;
 
     uint256 public constant CAN_UNWRAP = 1;
-    uint256 public constant CAN_SET_RESOLVER = 2;
-    uint256 public constant CAN_SET_TTL = 4;
-    uint256 public constant CAN_CREATE_SUBDOMAIN = 8;
-    uint256 public constant CAN_REPLACE_SUBDOMAIN = 16;
+    uint256 public constant CAN_SET_DATA = 2;
+    uint256 public constant CAN_CREATE_SUBDOMAIN = 4;
+    uint256 public constant CAN_REPLACE_SUBDOMAIN = 8;
     uint256 public constant CAN_DO_EVERYTHING = 0xfff; // set to 64 f's
 }

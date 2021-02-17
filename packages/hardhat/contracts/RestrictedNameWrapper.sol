@@ -45,15 +45,10 @@ contract RestrictedNameWrapper is
         return fuses[node] & CAN_UNWRAP != 0;
     }
 
-    function canSetTTL(bytes32 node) public view returns (bool) {
-        //return fuses[node] & CAN_UNWRAP != 0 || fuses[node] & CAN_SET_TTL != 0;
-        return fuses[node] & (CAN_UNWRAP | CAN_SET_TTL) != 0;
-    }
-
     //00001 | 10000 = 10001 // create a bitmask
 
-    function canSetResolver(bytes32 node) public view returns (bool) {
-        return fuses[node] & (CAN_UNWRAP | CAN_SET_RESOLVER) != 0;
+    function canSetData(bytes32 node) public view returns (bool) {
+        return fuses[node] & (CAN_UNWRAP | CAN_SET_DATA) != 0;
     }
 
     function canCreateSubdomain(bytes32 node) public view returns (bool) {
@@ -168,7 +163,7 @@ contract RestrictedNameWrapper is
         address resolver,
         uint64 ttl
     ) external {
-        require(canSetResolver(node) && canSetTTL(node));
+        require(canSetData(node));
         setResolver(node, resolver);
         setTTL(node, ttl);
         setOwner(node, owner);
@@ -220,10 +215,7 @@ contract RestrictedNameWrapper is
         override
         ownerOnly(node)
     {
-        require(
-            canSetResolver(node),
-            "Fuse already blown for setting resolver"
-        );
+        require(canSetData(node), "Fuse already blown for setting resolver");
         ens.setResolver(node, resolver);
     }
 
@@ -236,7 +228,7 @@ contract RestrictedNameWrapper is
     }
 
     function setTTL(bytes32 node, uint64 ttl) public ownerOnly(node) {
-        require(canSetTTL(node), "Fuse already blown for setting TTL");
+        require(canSetData(node), "Fuse already blown for setting TTL");
         ens.setTTL(node, ttl);
     }
 
