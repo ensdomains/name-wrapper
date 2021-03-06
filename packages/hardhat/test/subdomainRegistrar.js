@@ -33,14 +33,12 @@ async function deploy(name, _args) {
 describe('Subdomain Registrar and Wrapper', () => {
   let ENSRegistry
   let BaseRegistrar
-  let EthRegistrarController
   let RestrictedNameWrapper
   let PublicResolver
   let SubDomainRegistrar
-  let LinearPriceOracle
 
   describe('SubdomainRegistrar', () => {
-    it('Should deploy ENS contracts', async () => {
+    before(async () => {
       const [owner] = await ethers.getSigners()
       const registryJSON = loadENSContract('ens', 'ENSRegistry')
       const baseRegistrarJSON = loadENSContract(
