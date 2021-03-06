@@ -177,7 +177,8 @@ contract RestrictedNameWrapper is
         address resolver,
         uint64 ttl
     ) external {
-        require(canSetData(node));
+        //TODO add canTransfer when fuse is written
+        require(canSetData(node), "Fuse is blown for setting data");
         ens.setRecord(node, owner, resolver, ttl);
     }
 
