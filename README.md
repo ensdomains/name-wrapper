@@ -1,4 +1,4 @@
-# Subdomain Registrar with NFT Restrictive Wrapper
+# NFT Fuse permissions wrapper
 
 > is everything you need to get started building decentralized applications powered by smart contracts
 
