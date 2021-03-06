@@ -1,1 +1,1 @@
-# ENS NFT Fuse permissions wrapper
+# ENS NFT Fuse wrapper
