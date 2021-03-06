@@ -16,50 +16,6 @@ const ROOT_NODE =
 
 const addresses = {}
 
-const NO_AUTO_DEPLOY = [
-  'PublicResolver.sol',
-  'SubdomainRegistrar.sol',
-  'RestrictedNameWrapper.sol',
-]
-
-function readArgumentsFile(contractName) {
-  let args = []
-  try {
-    const argsFile = `./contracts/${contractName}.args`
-    if (fs.existsSync(argsFile)) {
-      args = JSON.parse(fs.readFileSync(argsFile))
-    }
-  } catch (e) {
-    console.log(e)
-  }
-
-  return args
-}
-
-const isSolidity = (fileName) =>
-  fileName.indexOf('.sol') >= 0 && fileName.indexOf('.swp.') < 0
-
-async function autoDeploy() {
-  const contractList = fs.readdirSync(config.paths.sources)
-  return contractList
-    .filter((fileName) => {
-      if (NO_AUTO_DEPLOY.includes(fileName)) {
-        //don't auto deploy this list of Solidity files
-        return false
-      }
-      return isSolidity(fileName)
-    })
-    .reduce((lastDeployment, fileName) => {
-      const contractName = fileName.replace('.sol', '')
-      const args = readArgumentsFile(contractName)
-
-      // Wait for last deployment to complete before starting the next
-      return lastDeployment.then((resultArrSoFar) =>
-        deploy(contractName, args).then((result) => [...resultArrSoFar, result])
-      )
-    }, Promise.resolve([]))
-}
-
 async function deploy(name, _args) {
   const args = _args || []
 
