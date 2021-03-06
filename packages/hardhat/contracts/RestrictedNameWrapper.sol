@@ -133,10 +133,7 @@ contract RestrictedNameWrapper is
         fuses[node] = _fuses;
         address owner = ens.owner(node);
 
-        require(
-            owner == msg.sender || ens.isApprovedForAll(owner, msg.sender),
-            "Domain is not owned by the sender"
-        );
+        require(owner == msg.sender, "Domain is not owned by the sender");
         ens.setOwner(node, address(this));
         mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
     }
