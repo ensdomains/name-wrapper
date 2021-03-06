@@ -33,6 +33,13 @@ abstract contract IRestrictedNameWrapper is IERC721 {
         address owner
     ) public virtual returns (bytes32);
 
+    function setSubnodeOwnerAndWrap(
+        bytes32 node,
+        bytes32 label,
+        address newOwner,
+        uint256 _fuses
+    ) public virtual returns (bytes32);
+
     function isOwnerOrApproved(bytes32 node, address addr)
         public
         virtual
@@ -42,9 +49,10 @@ abstract contract IRestrictedNameWrapper is IERC721 {
 
     function setOwner(bytes32 node, address owner) public virtual;
 
-    uint256 public constant CAN_UNWRAP = 1;
-    uint256 public constant CAN_SET_DATA = 2;
-    uint256 public constant CAN_CREATE_SUBDOMAIN = 4;
-    uint256 public constant CAN_REPLACE_SUBDOMAIN = 8;
-    uint256 public constant CAN_DO_EVERYTHING = 0xfff; // set to 64 f's
+    uint256 public constant CANNOT_UNWRAP = 1;
+    uint256 public constant CANNOT_TRANSFER = 2; // for DNSSEC names
+    uint256 public constant CANNOT_SET_DATA = 4;
+    uint256 public constant CANNOT_CREATE_SUBDOMAIN = 8;
+    uint256 public constant CANNOT_REPLACE_SUBDOMAIN = 16;
+    uint256 public constant CAN_DO_EVERYTHING = 0;
 }

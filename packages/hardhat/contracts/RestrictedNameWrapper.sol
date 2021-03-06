@@ -16,6 +16,8 @@ contract RestrictedNameWrapper is
 
     bytes32 public constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
+    bytes32 public constant ROOT_NODE =
+        0x0000000000000000000000000000000000000000000000000000000000000000;
 
     mapping(bytes32 => uint256) public fuses;
 
@@ -42,21 +44,27 @@ contract RestrictedNameWrapper is
     }
 
     function canUnwrap(bytes32 node) public view returns (bool) {
-        return fuses[node] & CAN_UNWRAP != 0;
+        return fuses[node] & CANNOT_UNWRAP == 0;
     }
+
+    // 00000 & 00001
 
     //00001 | 10000 = 10001 // create a bitmask
 
     function canSetData(bytes32 node) public view returns (bool) {
-        return fuses[node] & (CAN_UNWRAP | CAN_SET_DATA) != 0;
+        return fuses[node] & CANNOT_SET_DATA == 0;
     }
 
     function canCreateSubdomain(bytes32 node) public view returns (bool) {
-        return fuses[node] & (CAN_UNWRAP | CAN_CREATE_SUBDOMAIN) != 0;
+        return fuses[node] & CANNOT_CREATE_SUBDOMAIN == 0;
     }
 
+    // I can only do this if CANNOT_UNWRAP is burned AND CANNOT_CREATE_SUBDOMAIN is burned
+    //
+    // 00001 & 00001 | 00100
+
     function canReplaceSubdomain(bytes32 node) public view returns (bool) {
-        return fuses[node] & (CAN_UNWRAP | CAN_REPLACE_SUBDOMAIN) != 0;
+        return fuses[node] & CANNOT_REPLACE_SUBDOMAIN == 0;
     }
 
     /**
@@ -84,6 +92,9 @@ contract RestrictedNameWrapper is
         // create the namehash for the name using .eth and the label
         bytes32 node = keccak256(abi.encodePacked(ETH_NODE, label));
 
+        //set fuses
+        fuses[node] = _fuses;
+
         // wrapped token uses whole node
         uint256 wrapperTokenId = uint256(node);
 
@@ -97,14 +108,8 @@ contract RestrictedNameWrapper is
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(tokenId, address(this));
 
-        // add fuses, but stop it being unwrapped
-        fuses[node] = _fuses - CAN_UNWRAP;
-
         // mint a new ERC721 token
         mintERC721(wrapperTokenId, wrappedOwner, "");
-
-        // Burn the original ETH registrar token
-        registrar.transferFrom(address(this), address(0xdead), tokenId);
     }
 
     function wrap(
@@ -114,15 +119,23 @@ contract RestrictedNameWrapper is
         address wrappedOwner
     ) public override {
         //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
-        if (canReplaceSubdomain(parentNode)) {
-            _fuses = CAN_DO_EVERYTHING;
-        }
+
+        //TODO uncomment later
+        // require(
+        //     parentNode != ETH_NODE,
+        //     ".eth domains need to use the wrapETH2LD"
+        // );
+        require(
+            !canReplaceSubdomain(parentNode) || parentNode == ETH_NODE,
+            "Parent node needs to burn fuse for CANNOT_REPLACE_SUBDOMAIN first"
+        );
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         fuses[node] = _fuses;
         address owner = ens.owner(node);
+
         require(
             owner == msg.sender || ens.isApprovedForAll(owner, msg.sender),
-            "not approved and isn't sender"
+            "Domain is not owned by the sender"
         );
         ens.setOwner(node, address(this));
         mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
@@ -146,15 +159,19 @@ contract RestrictedNameWrapper is
         bytes32 label,
         uint256 _fuses
     ) public ownerOnly(keccak256(abi.encodePacked(node, label))) {
-        // Check parent domain. Can't clear the flag if the parent hasn't been burned canUnwrap/. Error
-        BaseRegistrar registrar = BaseRegistrar(ens.owner(ETH_NODE));
-        require(
-            !canReplaceSubdomain(node) ||
-                (registrar.ownerOf(uint256(label)) == address(this) &&
-                    node == ETH_NODE)
-        );
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        fuses[subnode] &= _fuses;
+
+        // check that the parent has the CAN_REPLACE_SUBDOMAIN fuse burned, and the current domain has the CAN_UNWRAP fuse burned
+
+        // stop gap for now before figuring out how to wrap root and eth nodes
+        require(
+            !canReplaceSubdomain(node) || node == ETH_NODE || node == ROOT_NODE,
+            "Parent has not burned CAN_REPLACE_SUBDOMAIN fuse"
+        );
+
+        fuses[subnode] = fuses[subnode] | _fuses;
+
+        require(!canUnwrap(subnode), "Domain has not burned unwrap fuse");
     }
 
     function setRecord(
@@ -190,12 +207,27 @@ contract RestrictedNameWrapper is
     function setSubnodeOwner(
         bytes32 node,
         bytes32 label,
-        address owner
+        address newOwner
     ) public override ownerOnly(node) returns (bytes32) {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        address owner = ens.owner(subnode);
+        require(
+            (owner == address(0) && canCreateSubdomain(node)) ||
+                (owner != address(0) && canReplaceSubdomain(node)),
+            "The fuse has been burned for creating or replacing a subdomain"
+        );
 
-        require(ens.owner(subnode) == address(0) || canReplaceSubdomain(node));
-        ens.setSubnodeOwner(node, label, owner);
+        ens.setSubnodeOwner(node, label, newOwner);
+    }
+
+    function setSubnodeOwnerAndWrap(
+        bytes32 node,
+        bytes32 label,
+        address newOwner,
+        uint256 _fuses
+    ) public override returns (bytes32) {
+        setSubnodeOwner(node, label, newOwner);
+        wrap(node, label, _fuses, newOwner);
     }
 
     function setSubnodeRecordAndWrap(
