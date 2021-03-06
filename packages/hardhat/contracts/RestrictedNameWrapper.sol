@@ -178,9 +178,7 @@ contract RestrictedNameWrapper is
         uint64 ttl
     ) external {
         require(canSetData(node));
-        setResolver(node, resolver);
-        setTTL(node, ttl);
-        setOwner(node, owner);
+        ens.setRecord(node, owner, resolver, ttl);
     }
 
     function setSubnodeRecord(
