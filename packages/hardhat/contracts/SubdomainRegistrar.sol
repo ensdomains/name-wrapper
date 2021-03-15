@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "../interfaces/ENS.sol";
 import "../interfaces/Resolver.sol";
 import "../interfaces/ISubdomainRegistrar.sol";
-import "../interfaces/IRestrictedNameWrapper.sol";
+import "../interfaces/INFTFuseWrapper.sol";
 
 // import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
@@ -27,7 +27,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
     mapping(bytes32 => Domain) domains;
 
     ENS public ens;
-    IRestrictedNameWrapper public wrapper;
+    INFTFuseWrapper public wrapper;
 
     modifier ownerOnly(bytes32 node) {
         address owner = wrapper.ownerOf(uint256(node));
@@ -48,7 +48,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         _;
     }
 
-    constructor(ENS _ens, IRestrictedNameWrapper _wrapper) {
+    constructor(ENS _ens, INFTFuseWrapper _wrapper) {
         ens = _ens;
         wrapper = _wrapper;
         ens.setApprovalForAll(address(wrapper), true);

@@ -2,7 +2,7 @@ pragma solidity >=0.6.0 <0.8.0;
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./Resolver.sol";
 
-abstract contract IRestrictedNameWrapper is IERC721 {
+abstract contract INFTFuseWrapper is IERC721 {
     function wrapETH2LD(
         bytes32 label,
         uint256 _fuses,

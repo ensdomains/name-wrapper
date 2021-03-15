@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "./profiles/AddrResolver.sol";
 import "./profiles/ContentHashResolver.sol";
 import "../interfaces/ENS.sol";
-import "../interfaces/IRestrictedNameWrapper.sol";
+import "../interfaces/INFTFuseWrapper.sol";
 
 /**
  * A simple resolver anyone can use; only allows the owner of a node to set its
@@ -13,7 +13,7 @@ import "../interfaces/IRestrictedNameWrapper.sol";
  */
 contract PublicResolver is AddrResolver, ContentHashResolver {
     ENS ens;
-    IRestrictedNameWrapper wrapper;
+    INFTFuseWrapper wrapper;
 
     /**
      * A mapping of authorisations. An address that is authorised for a name
@@ -31,7 +31,7 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
         bool isAuthorised
     );
 
-    constructor(ENS _ens, IRestrictedNameWrapper _wrapper) public {
+    constructor(ENS _ens, INFTFuseWrapper _wrapper) public {
         ens = _ens;
         wrapper = _wrapper;
     }
@@ -57,7 +57,7 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
         emit AuthorisationChanged(node, msg.sender, target, isAuthorised);
     }
 
-    function isAuthorised(bytes32 node) internal override view returns (bool) {
+    function isAuthorised(bytes32 node) internal view override returns (bool) {
         address owner = ens.owner(node);
 
         // if owner is wrapper
@@ -97,9 +97,8 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
                 node == 0 || readBytes32(data[i], 4) == node,
                 "invalid node for multicall"
             );
-            (bool success, bytes memory result) = address(this).delegatecall(
-                data[i]
-            );
+            (bool success, bytes memory result) =
+                address(this).delegatecall(data[i]);
             require(success);
             results[i] = result;
         }
@@ -115,8 +114,8 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
 
     function supportsInterface(bytes4 interfaceID)
         public
-        override(AddrResolver, ContentHashResolver)
         pure
+        override(AddrResolver, ContentHashResolver)
         returns (bool)
     {
         return super.supportsInterface(interfaceID);

@@ -2,10 +2,10 @@ import "../interfaces/ENS.sol";
 import "../interfaces/BaseRegistrar.sol";
 import "../interfaces/Resolver.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "../interfaces/IRestrictedNameWrapper.sol";
+import "../interfaces/INFTFuseWrapper.sol";
 import "hardhat/console.sol";
 
-contract NFTFuseWrapper is ERC721, IERC721Receiver, IRestrictedNameWrapper {
+contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     ENS public ens;
     BaseRegistrar public registrar;
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
