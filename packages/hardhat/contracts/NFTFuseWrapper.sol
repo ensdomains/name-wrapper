@@ -42,6 +42,10 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         return fuses[node] & CANNOT_UNWRAP == 0;
     }
 
+    function canTransfer(bytes32 node) public view returns (bool) {
+        return fuses[node] & CANNOT_TRANSFER == 0;
+    }
+
     function canSetData(bytes32 node) public view returns (bool) {
         return fuses[node] & CANNOT_SET_DATA == 0;
     }
@@ -239,6 +243,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         override
         ownerOnly(node)
     {
+        require(canTransfer(node), "Fuse already blown for setting owner");
         safeTransferFrom(msg.sender, owner, uint256(node));
     }
 
