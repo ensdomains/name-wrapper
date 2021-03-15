@@ -33,7 +33,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         override
         returns (bool)
     {
-        //memory owner = ;
         return
             ownerOf(uint256(node)) == addr ||
             isApprovedForAll(ownerOf(uint256(node)), addr);
@@ -43,10 +42,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         return fuses[node] & CANNOT_UNWRAP == 0;
     }
 
-    // 00000 & 00001
-
-    //00001 | 10000 = 10001 // create a bitmask
-
     function canSetData(bytes32 node) public view returns (bool) {
         return fuses[node] & CANNOT_SET_DATA == 0;
     }
@@ -54,10 +49,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     function canCreateSubdomain(bytes32 node) public view returns (bool) {
         return fuses[node] & CANNOT_CREATE_SUBDOMAIN == 0;
     }
-
-    // I can only do this if CANNOT_UNWRAP is burned AND CANNOT_CREATE_SUBDOMAIN is burned
-    //
-    // 00001 & 00001 | 00100
 
     function canReplaceSubdomain(bytes32 node) public view returns (bool) {
         return fuses[node] & CANNOT_REPLACE_SUBDOMAIN == 0;
