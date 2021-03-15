@@ -5,11 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "../interfaces/IRestrictedNameWrapper.sol";
 import "hardhat/console.sol";
 
-contract RestrictedNameWrapper is
-    ERC721,
-    IERC721Receiver,
-    IRestrictedNameWrapper
-{
+contract NFTFuseWrapper is ERC721, IERC721Receiver, IRestrictedNameWrapper {
     ENS public ens;
     BaseRegistrar public registrar;
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;

@@ -33,7 +33,7 @@ async function deploy(name, _args) {
 describe('NFT fuse wrapper', () => {
   let ENSRegistry
   let BaseRegistrar
-  let RestrictedNameWrapper
+  let NFTFuseWrapper
   let PublicResolver
   let SubDomainRegistrar
 
@@ -79,19 +79,19 @@ describe('NFT fuse wrapper', () => {
 
     await BaseRegistrar.addController(account)
 
-    RestrictedNameWrapper = await deploy('RestrictedNameWrapper', [
+    NFTFuseWrapper = await deploy('NFTFuseWrapper', [
       EnsRegistry.address,
       BaseRegistrar.address,
     ])
 
     PublicResolver = await deploy('PublicResolver', [
       EnsRegistry.address,
-      addresses['RestrictedNameWrapper'],
+      addresses['NFTFuseWrapper'],
     ])
 
     SubDomainRegistrar = await deploy('SubdomainRegistrar', [
       EnsRegistry.address,
-      addresses['RestrictedNameWrapper'],
+      addresses['NFTFuseWrapper'],
     ])
 
     // setup .eth
@@ -117,9 +117,9 @@ describe('NFT fuse wrapper', () => {
     console.log('ensEthOwner', ensEthOwner)
 
     console.log(
-      'ens.setApprovalForAll RestrictedNameWrapper',
+      'ens.setApprovalForAll NFTFuseWrapper',
       account,
-      addresses['RestrictedNameWrapper']
+      addresses['NFTFuseWrapper']
     )
 
     console.log(
@@ -130,14 +130,11 @@ describe('NFT fuse wrapper', () => {
     await EnsRegistry.setApprovalForAll(SubDomainRegistrar.address, true)
 
     console.log(
-      'RestrictedNameWrapper.setApprovalForAll SubDomainRegistrar',
+      'NFTFuseWrapper.setApprovalForAll SubDomainRegistrar',
       SubDomainRegistrar.address,
       true
     )
-    await RestrictedNameWrapper.setApprovalForAll(
-      SubDomainRegistrar.address,
-      true
-    )
+    await NFTFuseWrapper.setApprovalForAll(SubDomainRegistrar.address, true)
 
     //make sure base registrar is owner of eth TLD
 
@@ -146,20 +143,20 @@ describe('NFT fuse wrapper', () => {
     expect(ownerOfEth).to.equal(BaseRegistrar.address)
   })
 
-  describe('RestrictedNameWrapper', () => {
+  describe('NFTFuseWrapper', () => {
     it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
       const [signer] = await ethers.getSigners()
       const account = await signer.getAddress()
 
       await BaseRegistrar.register(labelhash('wrapped'), account, 84600)
-      await EnsRegistry.setApprovalForAll(RestrictedNameWrapper.address, true)
-      await RestrictedNameWrapper.wrap(
+      await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
+      await NFTFuseWrapper.wrap(
         namehash('eth'),
         labelhash('wrapped'),
         255,
         account
       )
-      const ownerOfWrappedEth = await RestrictedNameWrapper.ownerOf(
+      const ownerOfWrappedEth = await NFTFuseWrapper.ownerOf(
         namehash('wrapped.eth')
       )
       expect(ownerOfWrappedEth).to.equal(account)
@@ -172,21 +169,17 @@ describe('NFT fuse wrapper', () => {
       await BaseRegistrar.register(labelhash('wrapped2'), account, 84600)
 
       //allow the restricted name wrappper to transfer the name to itself and reclaim it
-      await BaseRegistrar.setApprovalForAll(RestrictedNameWrapper.address, true)
+      await BaseRegistrar.setApprovalForAll(NFTFuseWrapper.address, true)
 
-      await RestrictedNameWrapper.wrapETH2LD(
-        labelhash('wrapped2'),
-        255,
-        account
-      )
+      await NFTFuseWrapper.wrapETH2LD(labelhash('wrapped2'), 255, account)
 
       //make sure reclaim claimed ownership for the wrapper in registry
       const ownerInRegistry = await EnsRegistry.owner(namehash('wrapped2.eth'))
 
-      expect(ownerInRegistry).to.equal(RestrictedNameWrapper.address)
+      expect(ownerInRegistry).to.equal(NFTFuseWrapper.address)
 
       //make sure owner in the wrapper is the user
-      const ownerOfWrappedEth = await RestrictedNameWrapper.ownerOf(
+      const ownerOfWrappedEth = await NFTFuseWrapper.ownerOf(
         namehash('wrapped2.eth')
       )
 
@@ -197,12 +190,10 @@ describe('NFT fuse wrapper', () => {
         labelhash('wrapped2')
       )
 
-      expect(ownerInRegistrar).to.equal(RestrictedNameWrapper.address)
+      expect(ownerInRegistrar).to.equal(NFTFuseWrapper.address)
 
       // make sure it can't be unwrapped
-      const canUnwrap = await RestrictedNameWrapper.canUnwrap(
-        namehash('wrapped2.eth')
-      )
+      const canUnwrap = await NFTFuseWrapper.canUnwrap(namehash('wrapped2.eth'))
     })
 
     it('can send ERC721 token to restricted wrapper', async () => {
@@ -217,11 +208,11 @@ describe('NFT fuse wrapper', () => {
 
       await BaseRegistrar['safeTransferFrom(address,address,uint256)'](
         account,
-        RestrictedNameWrapper.address,
+        NFTFuseWrapper.address,
         tokenId
       )
 
-      const ownerInWrapper = await RestrictedNameWrapper.ownerOf(wrappedTokenId)
+      const ownerInWrapper = await NFTFuseWrapper.ownerOf(wrappedTokenId)
 
       expect(ownerInWrapper).to.equal(account)
     })
@@ -232,41 +223,41 @@ describe('NFT fuse wrapper', () => {
       const tokenId = labelhash('fuses1')
       const wrappedTokenId = namehash('fuses1.eth')
       const CAN_DO_EVERYTHING = 0
-      const CANNOT_UNWRAP = await RestrictedNameWrapper.CANNOT_UNWRAP()
+      const CANNOT_UNWRAP = await NFTFuseWrapper.CANNOT_UNWRAP()
 
       await BaseRegistrar.register(tokenId, account, 84600)
 
-      await RestrictedNameWrapper.wrapETH2LD(
+      await NFTFuseWrapper.wrapETH2LD(
         tokenId,
         CAN_DO_EVERYTHING | CANNOT_UNWRAP,
         account
       )
 
-      const CANNOT_SET_DATA = await RestrictedNameWrapper.CANNOT_SET_DATA()
+      const CANNOT_SET_DATA = await NFTFuseWrapper.CANNOT_SET_DATA()
 
-      await RestrictedNameWrapper.burnFuses(
+      await NFTFuseWrapper.burnFuses(
         namehash('eth'),
         tokenId,
         CAN_DO_EVERYTHING | CANNOT_SET_DATA
       )
 
-      const ownerInWrapper = await RestrictedNameWrapper.ownerOf(wrappedTokenId)
+      const ownerInWrapper = await NFTFuseWrapper.ownerOf(wrappedTokenId)
 
       expect(ownerInWrapper).to.equal(account)
 
       // check flag in the wrapper
-      const canSetData = await RestrictedNameWrapper.canSetData(wrappedTokenId)
+      const canSetData = await NFTFuseWrapper.canSetData(wrappedTokenId)
 
       expect(canSetData).to.equal(false)
 
       //try to set the resolver and ttl
       expect(
-        RestrictedNameWrapper.setResolver(wrappedTokenId, account)
+        NFTFuseWrapper.setResolver(wrappedTokenId, account)
       ).to.be.revertedWith('revert Fuse already blown for setting resolver')
 
-      expect(
-        RestrictedNameWrapper.setTTL(wrappedTokenId, 1000)
-      ).to.be.revertedWith('revert Fuse already blown for setting TTL')
+      expect(NFTFuseWrapper.setTTL(wrappedTokenId, 1000)).to.be.revertedWith(
+        'revert Fuse already blown for setting TTL'
+      )
     })
 
     it('can set fuses and burn canCreateSubdomains', async () => {
@@ -275,19 +266,19 @@ describe('NFT fuse wrapper', () => {
       const tokenId = labelhash('fuses2')
       const wrappedTokenId = namehash('fuses2.eth')
       const CAN_DO_EVERYTHING = 0
-      const CANNOT_UNWRAP = await RestrictedNameWrapper.CANNOT_UNWRAP()
-      const CANNOT_REPLACE_SUBDOMAIN = await RestrictedNameWrapper.CANNOT_REPLACE_SUBDOMAIN()
-      const CANNOT_CREATE_SUBDOMAIN = await RestrictedNameWrapper.CANNOT_CREATE_SUBDOMAIN()
+      const CANNOT_UNWRAP = await NFTFuseWrapper.CANNOT_UNWRAP()
+      const CANNOT_REPLACE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_REPLACE_SUBDOMAIN()
+      const CANNOT_CREATE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_CREATE_SUBDOMAIN()
 
       await BaseRegistrar.register(tokenId, account, 84600)
 
-      await RestrictedNameWrapper.wrapETH2LD(
+      await NFTFuseWrapper.wrapETH2LD(
         tokenId,
         CAN_DO_EVERYTHING | CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN,
         account
       )
 
-      const canCreateSubdomain1 = await RestrictedNameWrapper.canCreateSubdomain(
+      const canCreateSubdomain1 = await NFTFuseWrapper.canCreateSubdomain(
         wrappedTokenId
       )
 
@@ -300,7 +291,7 @@ describe('NFT fuse wrapper', () => {
       // can create before burn
 
       //revert not approved and isn't sender because subdomain isnt owned by contract?
-      await RestrictedNameWrapper.setSubnodeOwnerAndWrap(
+      await NFTFuseWrapper.setSubnodeOwnerAndWrap(
         wrappedTokenId,
         labelhash('creatable'),
         account,
@@ -308,20 +299,20 @@ describe('NFT fuse wrapper', () => {
       )
 
       expect(
-        await RestrictedNameWrapper.ownerOf(namehash('creatable.fuses2.eth'))
+        await NFTFuseWrapper.ownerOf(namehash('creatable.fuses2.eth'))
       ).to.equal(account)
 
-      await RestrictedNameWrapper.burnFuses(
+      await NFTFuseWrapper.burnFuses(
         namehash('eth'),
         tokenId,
         CAN_DO_EVERYTHING | CANNOT_CREATE_SUBDOMAIN
       )
 
-      const ownerInWrapper = await RestrictedNameWrapper.ownerOf(wrappedTokenId)
+      const ownerInWrapper = await NFTFuseWrapper.ownerOf(wrappedTokenId)
 
       expect(ownerInWrapper).to.equal(account)
 
-      const canCreateSubdomain = await RestrictedNameWrapper.canCreateSubdomain(
+      const canCreateSubdomain = await NFTFuseWrapper.canCreateSubdomain(
         wrappedTokenId
       )
 
@@ -330,7 +321,7 @@ describe('NFT fuse wrapper', () => {
       //try to create a subdomain
 
       expect(
-        RestrictedNameWrapper.setSubnodeOwner(
+        NFTFuseWrapper.setSubnodeOwner(
           namehash('fuses2.eth'),
           labelhash('uncreateable'),
           account
