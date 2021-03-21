@@ -20,10 +20,18 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     constructor(ENS _ens, BaseRegistrar _registrar) ERC721("ENS Name", "ENS") {
         ens = _ens;
         registrar = _registrar;
+
+        //burn all fuses for ROOT_NODE and ETH_NODE
+
+        fuses[ETH_NODE] = 255;
+        fuses[ROOT_NODE] = 255;
     }
 
     modifier ownerOnly(bytes32 node) {
-        require(isOwnerOrApproved(node, msg.sender));
+        require(
+            isOwnerOrApproved(node, msg.sender),
+            "msg.sender is not the owner or approved"
+        );
         _;
     }
 
@@ -128,6 +136,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         );
 
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
+
         // TODO: Check if parent cannot replace subdomains, then allow fuses, otherwise revert
         fuses[node] = _fuses;
         address owner = ens.owner(node);
@@ -141,11 +150,16 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     }
 
     //TODO: split node into labelhash and parent node
-    function unwrap(bytes32 node, address owner)
+    function unwrap(
+        bytes32 parentNode,
+        bytes32 label,
+        address owner
+    )
         public
         override
-        ownerOnly(node)
+        ownerOnly(keccak256(abi.encodePacked(parentNode, label)))
     {
+        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         // TODO: add support for unwrapping .eth
         require(canUnwrap(node), "Domain is unwrappable");
 
@@ -167,7 +181,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         // check that the parent has the CAN_REPLACE_SUBDOMAIN fuse burned, and the current domain has the CAN_UNWRAP fuse burned
 
         require(
-            !canReplaceSubdomain(node) || node == ETH_NODE || node == ROOT_NODE, // TODO: remove and burn fuses for ROOT/ETH in constructor
+            !canReplaceSubdomain(node),
             "Parent has not burned CAN_REPLACE_SUBDOMAIN fuse"
         );
 

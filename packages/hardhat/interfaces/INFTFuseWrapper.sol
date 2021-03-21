@@ -16,7 +16,11 @@ abstract contract INFTFuseWrapper is IERC721 {
         address wrappedOwner
     ) public virtual;
 
-    function unwrap(bytes32 node, address owner) public virtual;
+    function unwrap(
+        bytes32 parentNode,
+        bytes32 labelhash,
+        address owner
+    ) public virtual;
 
     function setSubnodeRecordAndWrap(
         bytes32 node,

@@ -142,11 +142,29 @@ describe('NFT fuse wrapper', () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
 
-    await BaseRegistrar.register(labelhash('xyz'), account, 84600)
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
-    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), 255, account)
+    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), 0, account)
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(namehash('xyz'))
     expect(ownerOfWrappedXYZ).to.equal(account)
+  })
+
+  it('unwrap() can unwrap a wrapped name', async () => {
+    const [signer] = await ethers.getSigners()
+    const account = await signer.getAddress()
+
+    await NFTFuseWrapper.setSubnodeOwner(
+      namehash('xyz'),
+      labelhash('wrapped'),
+      account
+    )
+    await NFTFuseWrapper.wrap(namehash('xyz'), labelhash('wrapped'), 0, account)
+    const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(
+      namehash('wrapped.xyz')
+    )
+    expect(ownerOfWrappedXYZ).to.equal(account)
+    await NFTFuseWrapper.unwrap(namehash('xyz'), labelhash('wrapped'), account)
+    const ownerInRegistry = await EnsRegistry.owner(namehash('wrapped.xyz'))
+    expect(ownerInRegistry).to.equal(account)
   })
 
   it('wrap2Ld() wraps a name with the ERC721 standard and fuses', async () => {
@@ -352,7 +370,7 @@ describe('NFT fuse wrapper', () => {
         account
       )
     ).to.be.revertedWith(
-      'revert The fuse has been burned for creating or replace a subdomain'
+      'revert The fuse has been burned for creating or replacing a subdomain'
     )
 
     //expect replacing subdomain to succeed
