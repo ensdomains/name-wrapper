@@ -58,6 +58,18 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         return fuses[node] & CANNOT_REPLACE_SUBDOMAIN == 0;
     }
 
+    function canCreateOrReplaceSubdomain(bytes32 node, bytes32 label)
+        public
+        returns (bool)
+    {
+        bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        address owner = ens.owner(subnode);
+
+        return
+            (owner == address(0) && canCreateSubdomain(node)) ||
+            (owner != address(0) && canReplaceSubdomain(node));
+    }
+
     /**
      * @dev Mint Erc721 for the subdomain
      * @param id The token ID (keccak256 of the label).
@@ -86,11 +98,10 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         //set fuses
         fuses[node] = _fuses;
 
-        // wrapped token uses whole node
-        uint256 wrapperTokenId = uint256(node);
-
         // .eth registar uses the labelhash of the node
         uint256 tokenId = uint256(label);
+
+        //check msg.sender() == authorised or ens.owner
 
         // transfer the token from the user to this contract
         address currentOwner = registrar.ownerOf(tokenId);
@@ -100,7 +111,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         registrar.reclaim(tokenId, address(this));
 
         // mint a new ERC721 token
-        mintERC721(wrapperTokenId, wrappedOwner, "");
+        mintERC721(uint256(node), wrappedOwner, "");
     }
 
     function wrap(
@@ -111,36 +122,40 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     ) public override {
         //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
 
-        //TODO uncomment later
-        // require(
-        //     parentNode != ETH_NODE,
-        //     ".eth domains need to use the wrapETH2LD"
-        // );
         require(
-            !canReplaceSubdomain(parentNode) || parentNode == ETH_NODE,
-            "Parent node needs to burn fuse for CANNOT_REPLACE_SUBDOMAIN first"
+            parentNode != ETH_NODE,
+            ".eth domains need to use the wrapETH2LD"
         );
+
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
+        // TODO: Check if parent cannot replace subdomains, then allow fuses, otherwise revert
         fuses[node] = _fuses;
         address owner = ens.owner(node);
 
-        require(owner == msg.sender, "Domain is not owned by the sender");
+        require(
+            owner == msg.sender, /* TODO:  || add authorised by sender */
+            "Domain is not owned by the sender"
+        );
         ens.setOwner(node, address(this));
         mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
     }
 
+    //TODO: split node into labelhash and parent node
     function unwrap(bytes32 node, address owner)
         public
         override
         ownerOnly(node)
     {
+        // TODO: add support for unwrapping .eth
         require(canUnwrap(node), "Domain is unwrappable");
 
-        //set fuses back to normal - not sure if we need this?
         fuses[node] = 0;
         _burn(uint256(node));
+        //TODO: check owner is not equal to 0x0
         ens.setOwner(node, owner);
     }
+
+    //TODO: Add a decorator for ownerOnly with multiple arguments to check parent
 
     function burnFuses(
         bytes32 node,
@@ -151,9 +166,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
 
         // check that the parent has the CAN_REPLACE_SUBDOMAIN fuse burned, and the current domain has the CAN_UNWRAP fuse burned
 
-        // stop gap for now before figuring out how to wrap root and eth nodes
         require(
-            !canReplaceSubdomain(node) || node == ETH_NODE || node == ROOT_NODE,
+            !canReplaceSubdomain(node) || node == ETH_NODE || node == ROOT_NODE, // TODO: remove and burn fuses for ROOT/ETH in constructor
             "Parent has not burned CAN_REPLACE_SUBDOMAIN fuse"
         );
 
@@ -180,13 +194,10 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         address resolver,
         uint64 ttl
     ) public ownerOnly(node) {
-        bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        address owner = ens.owner(subnode);
         require(
-            (owner == address(0) && canCreateSubdomain(node)) ||
-                (owner != address(0) && canReplaceSubdomain(node))
+            canCreateOrReplaceSubdomain(node, label),
+            "The fuse has been burned for creating or replacing a subdomain"
         );
-        //TODO repeat this on setSubnodeOwner()
 
         return ens.setSubnodeRecord(node, label, addr, resolver, ttl);
     }
@@ -196,11 +207,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         bytes32 label,
         address newOwner
     ) public override ownerOnly(node) returns (bytes32) {
-        bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        address owner = ens.owner(subnode);
         require(
-            (owner == address(0) && canCreateSubdomain(node)) ||
-                (owner != address(0) && canReplaceSubdomain(node)),
+            canCreateOrReplaceSubdomain(node, label),
             "The fuse has been burned for creating or replacing a subdomain"
         );
 
@@ -214,6 +222,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint256 _fuses
     ) public override returns (bytes32) {
         setSubnodeOwner(node, label, newOwner);
+        //TODO: replace with _wrap that doesn't transfer
         wrap(node, label, _fuses, newOwner);
     }
 
@@ -226,6 +235,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint256 _fuses
     ) public override returns (bytes32) {
         setSubnodeRecord(node, label, owner, resolver, ttl);
+        //TODO: replace with _wrap that doesn't transfer
         wrap(node, label, _fuses, owner);
     }
 
@@ -264,7 +274,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
             registrar.ownerOf(tokenId) == address(this),
             "Wrapper only supports .eth ERC721 token transfers"
         );
-        wrapETH2LD(bytes32(tokenId), 255, from);
+        wrapETH2LD(bytes32(tokenId), 0, from);
         //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
     }

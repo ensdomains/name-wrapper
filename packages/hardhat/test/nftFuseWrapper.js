@@ -48,8 +48,6 @@ describe('NFT fuse wrapper', () => {
       owner
     )
 
-    console.log('registry JSON', registryJSON.bytecode)
-
     EnsRegistry = await registryContractFactory.deploy()
 
     try {
@@ -89,6 +87,13 @@ describe('NFT fuse wrapper', () => {
     await EnsRegistry.setSubnodeOwner(
       ROOT_NODE,
       utils.keccak256(utils.toUtf8Bytes('eth')),
+      account
+    )
+
+    // setup .xyz
+    await EnsRegistry.setSubnodeOwner(
+      ROOT_NODE,
+      utils.keccak256(utils.toUtf8Bytes('xyz')),
       account
     )
 
@@ -137,18 +142,11 @@ describe('NFT fuse wrapper', () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
 
-    await BaseRegistrar.register(labelhash('wrapped'), account, 84600)
+    await BaseRegistrar.register(labelhash('xyz'), account, 84600)
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
-    await NFTFuseWrapper.wrap(
-      namehash('eth'),
-      labelhash('wrapped'),
-      255,
-      account
-    )
-    const ownerOfWrappedEth = await NFTFuseWrapper.ownerOf(
-      namehash('wrapped.eth')
-    )
-    expect(ownerOfWrappedEth).to.equal(account)
+    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), 255, account)
+    const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(namehash('xyz'))
+    expect(ownerOfWrappedXYZ).to.equal(account)
   })
 
   it('wrap2Ld() wraps a name with the ERC721 standard and fuses', async () => {
