@@ -7,6 +7,7 @@ const { solidity } = require('ethereum-waffle')
 const n = require('eth-ens-namehash')
 const namehash = n.hash
 const { loadENSContract } = require('../utils/contracts')
+const baseRegistrarJSON = require('./baseRegistrarABI')
 
 use(solidity)
 
@@ -40,25 +41,15 @@ describe('NFT fuse wrapper', () => {
   before(async () => {
     const [owner] = await ethers.getSigners()
     const registryJSON = loadENSContract('ens', 'ENSRegistry')
-    const baseRegistrarJSON = loadENSContract(
-      'ethregistrar',
-      'BaseRegistrarImplementation'
-    )
-    const controllerJSON = loadENSContract(
-      'ethregistrar',
-      'ETHRegistrarController'
-    )
-    const dummyOracleJSON = loadENSContract('ethregistrar', 'DummyOracle')
-    const linearPremiumPriceOracleJSON = loadENSContract(
-      'ethregistrar',
-      'LinearPremiumPriceOracle'
-    )
 
     const registryContractFactory = new ethers.ContractFactory(
       registryJSON.abi,
       registryJSON.bytecode,
       owner
     )
+
+    console.log('registry JSON', registryJSON.bytecode)
+
     EnsRegistry = await registryContractFactory.deploy()
 
     try {
@@ -432,6 +423,15 @@ describe('NFT fuse wrapper', () => {
 //         'othername',
 //         account,
 //         account,
+//         addresses['PublicResolver'],
+//         [tx],
+//         {
+//           value: '1000000',
+//         }
+//       )
+//     ).to.be.revertedWith('revert invalid node for multicall')
+//   })
+// })
 //         addresses['PublicResolver'],
 //         [tx],
 //         {
