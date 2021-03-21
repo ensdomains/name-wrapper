@@ -149,7 +149,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
     }
 
-    //TODO: split node into labelhash and parent node
     function unwrap(
         bytes32 parentNode,
         bytes32 label,
@@ -159,13 +158,14 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         override
         ownerOnly(keccak256(abi.encodePacked(parentNode, label)))
     {
+        // Check address is not 0x0
+        require(owner != address(0x0));
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
         // TODO: add support for unwrapping .eth
         require(canUnwrap(node), "Domain is unwrappable");
 
         fuses[node] = 0;
         _burn(uint256(node));
-        //TODO: check owner is not equal to 0x0
         ens.setOwner(node, owner);
     }
 
