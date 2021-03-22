@@ -27,6 +27,14 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         fuses[ROOT_NODE] = 255;
     }
 
+    function makeNode(bytes32 node, bytes32 label)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(node, label));
+    }
+
     modifier ownerOnly(bytes32 node) {
         require(
             isOwnerOrApproved(node, msg.sender),
@@ -153,11 +161,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         bytes32 parentNode,
         bytes32 label,
         address owner
-    )
-        public
-        override
-        ownerOnly(keccak256(abi.encodePacked(parentNode, label)))
-    {
+    ) public override ownerOnly(makeNode(parentNode, label)) {
         // Check address is not 0x0
         require(owner != address(0x0));
         bytes32 node = keccak256(abi.encodePacked(parentNode, label));
@@ -175,7 +179,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         bytes32 node,
         bytes32 label,
         uint256 _fuses
-    ) public ownerOnly(keccak256(abi.encodePacked(node, label))) {
+    ) public ownerOnly(makeNode(node, label)) {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
 
         // check that the parent has the CAN_REPLACE_SUBDOMAIN fuse burned, and the current domain has the CAN_UNWRAP fuse burned
