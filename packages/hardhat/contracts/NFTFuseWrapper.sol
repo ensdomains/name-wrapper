@@ -162,10 +162,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         bytes32 label,
         address owner
     ) public override ownerOnly(makeNode(parentNode, label)) {
-        // Check address is not 0x0
         require(owner != address(0x0));
         bytes32 node = makeNode(parentNode, label);
-        // TODO: add support for unwrapping .eth
         require(canUnwrap(node), "Domain is unwrappable");
 
         fuses[node] = 0;
@@ -173,7 +171,12 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         ens.setOwner(node, owner);
     }
 
-    //TODO: Add a decorator for ownerOnly with multiple arguments to check parent
+    function unwrapETH2LD(bytes32 label, address owner) public {
+        //unwrap checks ownerOnly so no need to add separate modifier
+        unwrap(ETH_NODE, label, owner);
+        //transfer back original ERC721 to owner
+        registrar.transferFrom(address(this), owner, uint256(label));
+    }
 
     function burnFuses(
         bytes32 node,

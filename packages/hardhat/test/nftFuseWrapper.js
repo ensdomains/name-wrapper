@@ -154,20 +154,50 @@ describe('NFT fuse wrapper', () => {
 
     await NFTFuseWrapper.setSubnodeOwner(
       namehash('xyz'),
-      labelhash('wrapped'),
+      labelhash('unwrapped'),
       account
     )
-    await NFTFuseWrapper.wrap(namehash('xyz'), labelhash('wrapped'), 0, account)
+    await NFTFuseWrapper.wrap(
+      namehash('xyz'),
+      labelhash('unwrapped'),
+      0,
+      account
+    )
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(
-      namehash('wrapped.xyz')
+      namehash('unwrapped.xyz')
     )
     expect(ownerOfWrappedXYZ).to.equal(account)
-    await NFTFuseWrapper.unwrap(namehash('xyz'), labelhash('wrapped'), account)
-    const ownerInRegistry = await EnsRegistry.owner(namehash('wrapped.xyz'))
+    await NFTFuseWrapper.unwrap(
+      namehash('xyz'),
+      labelhash('unwrapped'),
+      account
+    )
+    const ownerInRegistry = await EnsRegistry.owner(namehash('unwrapped.xyz'))
     expect(ownerInRegistry).to.equal(account)
   })
 
-  it('wrap2Ld() wraps a name with the ERC721 standard and fuses', async () => {
+  it('unwrapETH2LD() can unwrap a wrapped .eth name', async () => {
+    const [signer] = await ethers.getSigners()
+    const account = await signer.getAddress()
+
+    await BaseRegistrar.register(labelhash('unwrapped'), account, 84600)
+
+    //allow the restricted name wrappper to transfer the name to itself and reclaim it
+    await BaseRegistrar.setApprovalForAll(NFTFuseWrapper.address, true)
+
+    await NFTFuseWrapper.wrapETH2LD(labelhash('unwrapped'), 0, account)
+    const ownerOfWrappedETH = await NFTFuseWrapper.ownerOf(
+      namehash('unwrapped.eth')
+    )
+    expect(ownerOfWrappedETH).to.equal(account)
+    await NFTFuseWrapper.unwrapETH2LD(labelhash('unwrapped'), account)
+    const ownerInRegistry = await EnsRegistry.owner(namehash('unwrapped.eth'))
+    expect(ownerInRegistry).to.equal(account)
+    const ownerInRegistrar = await BaseRegistrar.ownerOf(labelhash('unwrapped'))
+    expect(ownerInRegistrar).to.equal(account)
+  })
+
+  it('wrapETH2LD() wraps a name with the ERC721 standard and fuses', async () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
 
