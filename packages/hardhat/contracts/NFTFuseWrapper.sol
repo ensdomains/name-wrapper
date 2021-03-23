@@ -150,7 +150,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         address owner = ens.owner(node);
 
         require(
-            owner == msg.sender, /* TODO:  || add authorised by sender */
+            owner == msg.sender || ens.isApprovedForAll(owner, msg.sender), /* TODO:  || add authorised by sender */
             "Domain is not owned by the sender"
         );
         ens.setOwner(node, address(this));
@@ -201,6 +201,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint64 ttl
     ) external {
         //TODO add canTransfer when fuse is written
+        require(canTransfer(node), "Fuse is blown for transferring");
         require(canSetData(node), "Fuse is blown for setting data");
         ens.setRecord(node, owner, resolver, ttl);
     }
@@ -239,8 +240,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         address newOwner,
         uint256 _fuses
     ) public override returns (bytes32) {
-        setSubnodeOwner(node, label, newOwner);
-        //TODO: replace with _wrap that doesn't transfer
+        setSubnodeOwner(node, label, msg.sender);
+        // wrap automatically makes the contract the owner
         wrap(node, label, _fuses, newOwner);
     }
 
@@ -252,8 +253,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint64 ttl,
         uint256 _fuses
     ) public override returns (bytes32) {
-        setSubnodeRecord(node, label, owner, resolver, ttl);
-        //TODO: replace with _wrap that doesn't transfer
+        setSubnodeRecord(node, label, msg.sender, resolver, ttl);
+        // wrap automatically makes the contract the owner
         wrap(node, label, _fuses, owner);
     }
 

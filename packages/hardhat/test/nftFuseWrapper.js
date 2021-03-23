@@ -341,6 +341,10 @@ describe('NFT fuse wrapper', () => {
       255
     )
 
+    expect(await EnsRegistry.owner(namehash('creatable.fuses2.eth'))).to.equal(
+      NFTFuseWrapper.address
+    )
+
     expect(
       await NFTFuseWrapper.ownerOf(namehash('creatable.fuses2.eth'))
     ).to.equal(account)
