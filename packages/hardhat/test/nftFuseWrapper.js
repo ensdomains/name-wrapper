@@ -379,6 +379,85 @@ describe('NFT fuse wrapper', () => {
 
     //expect replacing subdomain to succeed
   })
+
+  it('can setSubnodeOwnerAndWrap', async () => {
+    const [signer] = await ethers.getSigners()
+    const account = await signer.getAddress()
+    const tokenId = labelhash('subdomains')
+    const wrappedTokenId = namehash('subdomains.eth')
+    const CAN_DO_EVERYTHING = 0
+    const CANNOT_UNWRAP = await NFTFuseWrapper.CANNOT_UNWRAP()
+    const CANNOT_REPLACE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_REPLACE_SUBDOMAIN()
+
+    await BaseRegistrar.register(tokenId, account, 84600)
+
+    await NFTFuseWrapper.wrapETH2LD(
+      tokenId,
+      CAN_DO_EVERYTHING | CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN,
+      account
+    )
+
+    // can create before burn
+
+    //revert not approved and isn't sender because subdomain isnt owned by contract?
+    await NFTFuseWrapper.setSubnodeOwnerAndWrap(
+      wrappedTokenId,
+      labelhash('setsubnodeownerandwrap'),
+      account,
+      255
+    )
+
+    expect(
+      await EnsRegistry.owner(namehash('setsubnodeownerandwrap.subdomains.eth'))
+    ).to.equal(NFTFuseWrapper.address)
+
+    expect(
+      await NFTFuseWrapper.ownerOf(
+        namehash('setsubnodeownerandwrap.subdomains.eth')
+      )
+    ).to.equal(account)
+  })
+
+  it('can setSubnodeRecordAndWrap', async () => {
+    const [signer] = await ethers.getSigners()
+    const account = await signer.getAddress()
+    const tokenId = labelhash('subdomains2')
+    const wrappedTokenId = namehash('subdomains2.eth')
+    const CAN_DO_EVERYTHING = 0
+    const CANNOT_UNWRAP = await NFTFuseWrapper.CANNOT_UNWRAP()
+    const CANNOT_REPLACE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_REPLACE_SUBDOMAIN()
+
+    await BaseRegistrar.register(tokenId, account, 84600)
+
+    await NFTFuseWrapper.wrapETH2LD(
+      tokenId,
+      CAN_DO_EVERYTHING | CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN,
+      account
+    )
+    // can create before burn
+
+    //revert not approved and isn't sender because subdomain isnt owned by contract?
+    await NFTFuseWrapper.setSubnodeRecordAndWrap(
+      wrappedTokenId,
+      labelhash('setsubnoderecordandwrap'),
+      account,
+      account,
+      0,
+      255
+    )
+
+    expect(
+      await EnsRegistry.owner(
+        namehash('setsubnoderecordandwrap.subdomains2.eth')
+      )
+    ).to.equal(NFTFuseWrapper.address)
+
+    expect(
+      await NFTFuseWrapper.ownerOf(
+        namehash('setsubnoderecordandwrap.subdomains2.eth')
+      )
+    ).to.equal(account)
+  })
 })
 // TODO move these tests to separate repo
 // describe('SubDomainRegistrar configureDomain', () => {
