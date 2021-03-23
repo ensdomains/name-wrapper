@@ -78,7 +78,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         public
         returns (bool)
     {
-        bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        bytes32 subnode = makeNode(node, label);
         address owner = ens.owner(subnode);
 
         return
@@ -109,7 +109,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         address wrappedOwner
     ) public override {
         // create the namehash for the name using .eth and the label
-        bytes32 node = keccak256(abi.encodePacked(ETH_NODE, label));
+        bytes32 node = makeNode(ETH_NODE, label);
 
         //set fuses
         fuses[node] = _fuses;
@@ -143,7 +143,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
             ".eth domains need to use the wrapETH2LD"
         );
 
-        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
+        bytes32 node = makeNode(parentNode, label);
 
         // TODO: Check if parent cannot replace subdomains, then allow fuses, otherwise revert
         fuses[node] = _fuses;
@@ -164,7 +164,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
     ) public override ownerOnly(makeNode(parentNode, label)) {
         // Check address is not 0x0
         require(owner != address(0x0));
-        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
+        bytes32 node = makeNode(parentNode, label);
         // TODO: add support for unwrapping .eth
         require(canUnwrap(node), "Domain is unwrappable");
 
@@ -180,7 +180,7 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         bytes32 label,
         uint256 _fuses
     ) public ownerOnly(makeNode(node, label)) {
-        bytes32 subnode = keccak256(abi.encodePacked(node, label));
+        bytes32 subnode = makeNode(node, label);
 
         // check that the parent has the CAN_REPLACE_SUBDOMAIN fuse burned, and the current domain has the CAN_UNWRAP fuse burned
 
