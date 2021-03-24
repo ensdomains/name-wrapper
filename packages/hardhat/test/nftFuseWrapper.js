@@ -141,9 +141,10 @@ describe('NFT fuse wrapper', () => {
   it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
+    const fuses = await NFTFuseWrapper.getMinimumParentFuses()
 
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
-    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), 0, account)
+    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), fuses, account)
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(namehash('xyz'))
     expect(ownerOfWrappedXYZ).to.equal(account)
   })
@@ -338,7 +339,7 @@ describe('NFT fuse wrapper', () => {
     const account = await signer.getAddress()
     const tokenId = labelhash('fuses2')
     const wrappedTokenId = namehash('fuses2.eth')
-    const CAN_DO_EVERYTHING = 0
+    const CAN_DO_EVERYTHING = await NFTFuseWrapper.CAN_DO_EVERYTHING()
     const CANNOT_UNWRAP = await NFTFuseWrapper.CANNOT_UNWRAP()
     const CANNOT_REPLACE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_REPLACE_SUBDOMAIN()
     const CANNOT_CREATE_SUBDOMAIN = await NFTFuseWrapper.CANNOT_CREATE_SUBDOMAIN()
