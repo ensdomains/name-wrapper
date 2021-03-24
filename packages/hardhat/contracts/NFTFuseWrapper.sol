@@ -54,10 +54,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
             isApprovedForAll(ownerOf(uint256(node)), addr);
     }
 
-    function getMinimumParentFuses() public view returns (uint256) {
-        return CAN_DO_EVERYTHING | CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN;
-    }
-
     function canUnwrap(bytes32 node) public view returns (bool) {
         return fuses[node] & CANNOT_UNWRAP == 0;
     }
@@ -140,8 +136,23 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint256 _fuses,
         address wrappedOwner
     ) public override {
-        //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
+        bytes32 node = makeNode(parentNode, label);
+        _wrap(parentNode, label, _fuses, wrappedOwner);
+        address owner = ens.owner(node);
 
+        require(
+            owner == msg.sender || ens.isApprovedForAll(owner, msg.sender), /* TODO:  || add authorised by sender */
+            "Domain is not owned by the sender"
+        );
+        ens.setOwner(node, address(this));
+    }
+
+    function _wrap(
+        bytes32 parentNode,
+        bytes32 label,
+        uint256 _fuses,
+        address wrappedOwner
+    ) private {
         require(
             parentNode != ETH_NODE,
             ".eth domains need to use the wrapETH2LD"
@@ -163,35 +174,8 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
                 "Domain has not burned unwrap fuse before burning other fuses"
             );
         }
-        address owner = ens.owner(node);
 
-        require(
-            owner == msg.sender || ens.isApprovedForAll(owner, msg.sender), /* TODO:  || add authorised by sender */
-            "Domain is not owned by the sender"
-        );
-        ens.setOwner(node, address(this));
-        mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
-    }
-
-    function _wrap(
-        bytes32 parentNode,
-        bytes32 label,
-        uint256 _fuses,
-        address wrappedOwner
-    ) private {
-        //check if the parent is !canReplaceSubdomain(node) if is, do the fuse, else, all not burned
-
-        require(
-            parentNode != ETH_NODE,
-            ".eth domains need to use the wrapETH2LD"
-        );
-
-        bytes32 node = makeNode(parentNode, label);
-
-        fuses[node] = _fuses;
-        address owner = ens.owner(node);
-
-        mintERC721(uint256(node), wrappedOwner, ""); //TODO add URI
+        mintERC721(uint256(node), wrappedOwner, "");
     }
 
     function unwrap(
@@ -280,10 +264,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         address newOwner,
         uint256 _fuses
     ) public override returns (bytes32) {
-        require(
-            !canReplaceSubdomain(node),
-            "Parent nodes need to burn CAN_REPLACE_SUBDOMAINS fuse"
-        );
         setSubnodeOwner(node, label, address(this));
         _wrap(node, label, _fuses, newOwner);
     }
@@ -296,10 +276,6 @@ contract NFTFuseWrapper is ERC721, IERC721Receiver, INFTFuseWrapper {
         uint64 ttl,
         uint256 _fuses
     ) public override returns (bytes32) {
-        require(
-            !canReplaceSubdomain(node),
-            "Parent nodes need to burn CAN_REPLACE_SUBDOMAINS fuse"
-        );
         setSubnodeRecord(node, label, address(this), resolver, ttl);
         _wrap(node, label, _fuses, owner);
     }

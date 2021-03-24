@@ -141,7 +141,7 @@ describe('NFT fuse wrapper', () => {
   it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
-    const fuses = await NFTFuseWrapper.getMinimumParentFuses()
+    const fuses = await NFTFuseWrapper.MINIMUM_PARENT_FUSES()
 
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
     await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), fuses, account)

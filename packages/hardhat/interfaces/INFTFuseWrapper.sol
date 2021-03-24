@@ -59,4 +59,6 @@ abstract contract INFTFuseWrapper is IERC721 {
     uint256 public constant CANNOT_CREATE_SUBDOMAIN = 8;
     uint256 public constant CANNOT_REPLACE_SUBDOMAIN = 16;
     uint256 public constant CAN_DO_EVERYTHING = 0;
+    uint256 public constant MINIMUM_PARENT_FUSES =
+        CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN;
 }
