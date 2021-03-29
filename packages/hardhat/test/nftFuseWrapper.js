@@ -360,8 +360,6 @@ describe('NFT fuse wrapper', () => {
       true
     )
 
-    console.log('canCreateSubdomain before burning', canCreateSubdomain1)
-
     // can create before burn
 
     //revert not approved and isn't sender because subdomain isnt owned by contract?
