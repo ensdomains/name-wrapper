@@ -67,10 +67,10 @@ contract PublicResolver is AddrResolver, ContentHashResolver {
 
             //Wrapper assumes ERC721 ownership interface
             return
-                owner == msg.sender ||
-                authorisations[node][owner][msg.sender] ||
-                wrapper.ownerOf(uint256(node)) == msg.sender ||
-                wrapper.isApprovedForAll(owner, msg.sender);
+                owner == msg.sender || authorisations[node][owner][msg.sender];
+            //TODO: add this back in
+            // || wrapper.ownerOf(uint256(node)) == msg.sender ||
+            // wrapper.isApprovedForAll(owner, msg.sender);
         }
 
         return owner == msg.sender || authorisations[node][owner][msg.sender];

@@ -1,8 +1,17 @@
 pragma solidity >=0.6.0 <0.8.0;
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+//import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
 import "./Resolver.sol";
 
-abstract contract INFTFuseWrapper is IERC721 {
+abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
+    function ownerOf(uint256 id) public virtual returns (address);
+
+    function getData(uint256 tokenId)
+        public
+        virtual
+        returns (address owner, uint96 fuses);
+
     function wrapETH2LD(
         bytes32 label,
         uint256 _fuses,
