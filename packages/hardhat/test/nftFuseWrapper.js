@@ -146,8 +146,6 @@ describe('NFT fuse wrapper', () => {
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
     await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), fuses, account)
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(namehash('xyz'))
-    const data = await NFTFuseWrapper._tokens(namehash('xyz'))
-    console.log(data)
     expect(ownerOfWrappedXYZ).to.equal(account)
   })
 
