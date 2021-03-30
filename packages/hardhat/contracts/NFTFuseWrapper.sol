@@ -396,15 +396,8 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         setData(tokenId, newOwner, fuses);
     }
 
-    function _burn(uint256 tokenId) public {
-        //TODO: write burn function
+    function _burn(uint256 tokenId) internal {
         address owner = ownerOf(tokenId);
-
-        // _beforeTokenTransfer(owner, address(0), tokenId);
-
-        // // Clear approvals
-        // _approve(address(0), tokenId);
-
         // Clear fuses and set owner to 0
         setData(tokenId, address(0x0), 0);
     }
