@@ -14,14 +14,14 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
 
     function wrapETH2LD(
         bytes32 label,
-        uint256 _fuses,
+        uint96 _fuses,
         address wrappedOwner
     ) public virtual;
 
     function wrap(
         bytes32 node,
         bytes32 label,
-        uint256 _fuses,
+        uint96 _fuses,
         address wrappedOwner
     ) public virtual;
 
@@ -37,7 +37,7 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         address owner,
         address resolver,
         uint64 ttl,
-        uint256 _fuses
+        uint96 _fuses
     ) public virtual returns (bytes32);
 
     function setSubnodeOwner(
@@ -50,7 +50,7 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         bytes32 node,
         bytes32 label,
         address newOwner,
-        uint256 _fuses
+        uint96 _fuses
     ) public virtual returns (bytes32);
 
     function isOwnerOrApproved(bytes32 node, address addr)
@@ -62,12 +62,12 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
 
     function setOwner(bytes32 node, address owner) public virtual;
 
-    uint256 public constant CANNOT_UNWRAP = 1;
-    uint256 public constant CANNOT_TRANSFER = 2; // for DNSSEC names
-    uint256 public constant CANNOT_SET_DATA = 4;
-    uint256 public constant CANNOT_CREATE_SUBDOMAIN = 8;
-    uint256 public constant CANNOT_REPLACE_SUBDOMAIN = 16;
-    uint256 public constant CAN_DO_EVERYTHING = 0;
-    uint256 public constant MINIMUM_PARENT_FUSES =
+    uint96 public constant CANNOT_UNWRAP = 1;
+    uint96 public constant CANNOT_TRANSFER = 2; // for DNSSEC names
+    uint96 public constant CANNOT_SET_DATA = 4;
+    uint96 public constant CANNOT_CREATE_SUBDOMAIN = 8;
+    uint96 public constant CANNOT_REPLACE_SUBDOMAIN = 16;
+    uint96 public constant CAN_DO_EVERYTHING = 0;
+    uint96 public constant MINIMUM_PARENT_FUSES =
         CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN;
 }

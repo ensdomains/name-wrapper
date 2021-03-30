@@ -24,16 +24,22 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    mapping(bytes32 => uint256) public fuses;
-
     constructor(ENS _ens, BaseRegistrar _registrar) {
         ens = _ens;
         registrar = _registrar;
 
         /* Burn all fuses for ROOT_NODE and ETH_NODE */
 
-        fuses[ETH_NODE] = 255;
-        fuses[ROOT_NODE] = 255;
+        setData(
+            uint256(ETH_NODE),
+            address(0x0),
+            uint96(CANNOT_REPLACE_SUBDOMAIN | CANNOT_UNWRAP)
+        );
+        setData(
+            uint256(ROOT_NODE),
+            address(0x0),
+            uint96(CANNOT_REPLACE_SUBDOMAIN | CANNOT_UNWRAP)
+        );
     }
 
     /**************************************************************************
@@ -345,23 +351,28 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     }
 
     function canUnwrap(bytes32 node) public view returns (bool) {
-        return fuses[node] & CANNOT_UNWRAP == 0;
+        (, uint96 fuses) = getData(uint256(node));
+        return fuses & CANNOT_UNWRAP == 0;
     }
 
     function canTransfer(bytes32 node) public view returns (bool) {
-        return fuses[node] & CANNOT_TRANSFER == 0;
+        (, uint96 fuses) = getData(uint256(node));
+        return fuses & CANNOT_TRANSFER == 0;
     }
 
     function canSetData(bytes32 node) public view returns (bool) {
-        return fuses[node] & CANNOT_SET_DATA == 0;
+        (, uint96 fuses) = getData(uint256(node));
+        return fuses & CANNOT_SET_DATA == 0;
     }
 
     function canCreateSubdomain(bytes32 node) public view returns (bool) {
-        return fuses[node] & CANNOT_CREATE_SUBDOMAIN == 0;
+        (, uint96 fuses) = getData(uint256(node));
+        return fuses & CANNOT_CREATE_SUBDOMAIN == 0;
     }
 
     function canReplaceSubdomain(bytes32 node) public view returns (bool) {
-        return fuses[node] & CANNOT_REPLACE_SUBDOMAIN == 0;
+        (, uint96 fuses) = getData(uint256(node));
+        return fuses & CANNOT_REPLACE_SUBDOMAIN == 0;
     }
 
     function canCreateOrReplaceSubdomain(bytes32 node, bytes32 label)
@@ -396,20 +407,17 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         // // Clear approvals
         // _approve(address(0), tokenId);
 
-        // _balances[owner] -= 1;
-        // delete _owners[tokenId];
+        // Clear fuses and set owner to 0
+        setData(tokenId, address(0x0), 0);
     }
 
     function wrapETH2LD(
         bytes32 label,
-        uint256 _fuses,
+        uint96 _fuses,
         address wrappedOwner
     ) public override {
         // create the namehash for the name using .eth and the label
         bytes32 node = makeNode(ETH_NODE, label);
-
-        //set fuses
-        fuses[node] = _fuses;
 
         // .eth registar uses the labelhash of the node
         uint256 tokenId = uint256(label);
@@ -423,14 +431,14 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(tokenId, address(this));
 
-        // mint a new ERC721 token
-        _mint(uint256(node), wrappedOwner, 0);
+        // mint a new ERC721 token with fuses
+        _mint(uint256(node), wrappedOwner, _fuses);
     }
 
     function wrap(
         bytes32 parentNode,
         bytes32 label,
-        uint256 _fuses,
+        uint96 _fuses,
         address wrappedOwner
     ) public override {
         bytes32 node = makeNode(parentNode, label);
@@ -447,7 +455,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     function _wrap(
         bytes32 parentNode,
         bytes32 label,
-        uint256 _fuses,
+        uint96 _fuses,
         address wrappedOwner
     ) private {
         require(
@@ -462,7 +470,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
 
         bytes32 node = makeNode(parentNode, label);
 
-        fuses[node] = _fuses;
+        _mint(uint256(node), wrappedOwner, _fuses);
 
         //If fuses are allow all just burned unwrap, check if it can be unwrapped before allow burning other fuses
         if (_fuses != CAN_DO_EVERYTHING && _fuses != CANNOT_UNWRAP) {
@@ -471,8 +479,6 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
                 "Domain has not burned unwrap fuse before burning other fuses"
             );
         }
-
-        _mint(uint256(node), wrappedOwner, 0);
     }
 
     function unwrap(
@@ -484,7 +490,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         bytes32 node = makeNode(parentNode, label);
         require(canUnwrap(node), "Domain is unwrappable");
 
-        fuses[node] = 0;
+        // burn token and fuse data
         _burn(uint256(node));
         ens.setOwner(node, owner);
     }
@@ -499,7 +505,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     function burnFuses(
         bytes32 node,
         bytes32 label,
-        uint256 _fuses
+        uint96 _fuses
     ) public ownerOnly(makeNode(node, label)) {
         bytes32 subnode = makeNode(node, label);
 
@@ -510,7 +516,11 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
             "Parent has not burned CAN_REPLACE_SUBDOMAIN fuse"
         );
 
-        fuses[subnode] = fuses[subnode] | _fuses;
+        (address owner, uint96 fuses) = getData(uint256(subnode));
+
+        uint96 newFuses = fuses | _fuses;
+
+        setData(uint256(subnode), owner, newFuses);
 
         require(!canUnwrap(subnode), "Domain has not burned unwrap fuse");
     }
@@ -559,7 +569,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         bytes32 node,
         bytes32 label,
         address newOwner,
-        uint256 _fuses
+        uint96 _fuses
     ) public override returns (bytes32) {
         setSubnodeOwner(node, label, address(this));
         _wrap(node, label, _fuses, newOwner);
@@ -571,7 +581,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         address owner,
         address resolver,
         uint64 ttl,
-        uint256 _fuses
+        uint96 _fuses
     ) public override returns (bytes32) {
         setSubnodeRecord(node, label, address(this), resolver, ttl);
         _wrap(node, label, _fuses, owner);
@@ -612,7 +622,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
             registrar.ownerOf(tokenId) == address(this),
             "Wrapper only supports .eth ERC721 token transfers"
         );
-        wrapETH2LD(bytes32(tokenId), 0, from);
+        wrapETH2LD(bytes32(tokenId), uint96(0), from);
         //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
     }
