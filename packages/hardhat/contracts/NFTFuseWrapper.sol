@@ -70,10 +70,8 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     /**
      * @dev See {IERC1155Metadata-uri}.
      */
-    function uri(
-        uint256 /*tokenId*/
-    ) public view virtual override returns (string memory) {
-        return "https://at.amulet.garden/token/{id}.json";
+    function uri(uint256) public view virtual override returns (string memory) {
+        return "";
     }
 
     /**
