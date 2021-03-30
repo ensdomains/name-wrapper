@@ -1,7 +1,6 @@
 import "../interfaces/ENS.sol";
 import "../interfaces/BaseRegistrar.sol";
 import "../interfaces/Resolver.sol";
-import "./ProxyRegistryWhitelist.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -9,7 +8,7 @@ import "@openzeppelin/contracts/introspection/ERC165.sol";
 import "../interfaces/INFTFuseWrapper.sol";
 import "hardhat/console.sol";
 
-contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
+contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     using Address for address;
     ENS public ens;
     BaseRegistrar public registrar;
@@ -20,18 +19,14 @@ contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
     bytes32 public constant ROOT_NODE =
         0x0000000000000000000000000000000000000000000000000000000000000000;
 
-    mapping(uint256 => uint256) private _tokens;
+    mapping(uint256 => uint256) public _tokens;
 
     // Mapping from owner to operator approvals
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     mapping(bytes32 => uint256) public fuses;
 
-    constructor(
-        ENS _ens,
-        BaseRegistrar _registrar,
-        address proxy
-    ) ProxyRegistryWhitelist(proxy) {
+    constructor(ENS _ens, BaseRegistrar _registrar) {
         ens = _ens;
         registrar = _registrar;
 
@@ -155,9 +150,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
         override
         returns (bool)
     {
-        return
-            _operatorApprovals[account][operator] ||
-            isProxyForOwner(account, operator);
+        return _operatorApprovals[account][operator];
     }
 
     /**
@@ -383,28 +376,20 @@ contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
             (owner != address(0) && canReplaceSubdomain(node));
     }
 
-    /**
-     * @dev Mint Erc721 for the subdomain
-     * @param id The token ID (keccak256 of the label).
-     * @param subdomainOwner The address that should own the registration.
-     * @param tokenURI tokenURI address
-     */
-
-    function mintERC721(
-        uint256 id,
-        address subdomainOwner,
-        string memory tokenURI
-    ) private returns (uint256) {
-        _mint(subdomainOwner, id);
-        return id;
-    }
-
-    function _mint(address newOwner, uint256 tokenId) public {
+    function _mint(
+        uint256 tokenId,
+        address newOwner,
+        uint96 fuses
+    ) public {
+        console.log(newOwner);
+        console.log(fuses);
         address owner = ownerOf(tokenId);
         require(owner == address(0), "ERC1155: mint of existing token");
         require(newOwner != address(0), "ERC1155: mint to the zero address");
 
-        setData(tokenId, owner, uint96(0));
+        setData(tokenId, newOwner, fuses);
+        address newOwner = ownerOf(tokenId);
+        console.log(newOwner);
     }
 
     function _burn(uint256 tokenId) public {
@@ -444,7 +429,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
         registrar.reclaim(tokenId, address(this));
 
         // mint a new ERC721 token
-        mintERC721(uint256(node), wrappedOwner, "");
+        _mint(uint256(node), wrappedOwner, 0);
     }
 
     function wrap(
@@ -492,7 +477,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ProxyRegistryWhitelist, ERC165 {
             );
         }
 
-        mintERC721(uint256(node), wrappedOwner, "");
+        _mint(uint256(node), wrappedOwner, 0);
     }
 
     function unwrap(
