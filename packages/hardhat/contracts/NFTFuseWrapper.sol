@@ -422,7 +422,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(tokenId, address(this));
 
-        // mint a new ERC721 token with fuses
+        // mint a new ERC1155 token with fuses
         _mint(uint256(node), wrappedOwner, _fuses);
     }
 
@@ -618,25 +618,3 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         return _ERC721_RECEIVED;
     }
 }
-
-// 1. ETHRegistrarController.commit()
-// 2. ETHRegistrarController.registerWithConfig()
-// 3. SubdomainRegistrar.configure()
-
-// a. ENS.setApprovalForAll(SubdomainRegistrar, true)
-// b. RestrictiveWrapper.setApprovaForAll(SubdomainRegistrar, true)
-
-// Nick's feedback
-
-// minting takes 120k more gas. Check for another ERC721 contract that is lighter weight.
-
-// When checking canUnwrap - need to ch
-// When calling
-
-// Options for wrapping. Approve Wrapper + wrap. Use ERC721 onERC721Received hook and add calldata to wrap it (safeTransferFrom)
-// Do both safety
-// Write the wrapped function
-// Send ETH Registrar token to ourselves, so we have control over it (burn). Identify if node is .eth
-
-//Combine CAN_SET_RESOLVER and CAN_SET_TTL to one fuse
-// Add events so subgraph can track
