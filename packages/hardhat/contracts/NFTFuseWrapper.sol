@@ -154,7 +154,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     }
 
     /**
-     * @dev Returns the Amulet's owner address, the block it was revealed in, and its score.
+     * @dev Returns the Name's owner address and fuses
      */
     function getData(uint256 tokenId)
         public
@@ -168,7 +168,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     }
 
     /**
-     * @dev Sets the amulet's owner address, reveal block, and score.
+     * @dev Sets the Name's owner address and fuses
      */
     function setData(
         uint256 tokenId,
@@ -381,15 +381,10 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         address newOwner,
         uint96 fuses
     ) public {
-        console.log(newOwner);
-        console.log(fuses);
         address owner = ownerOf(tokenId);
         require(owner == address(0), "ERC1155: mint of existing token");
         require(newOwner != address(0), "ERC1155: mint to the zero address");
-
         setData(tokenId, newOwner, fuses);
-        address newOwner = ownerOf(tokenId);
-        console.log(newOwner);
     }
 
     function _burn(uint256 tokenId) public {
