@@ -423,10 +423,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         uint96 _fuses,
         address wrappedOwner
     ) public override {
-        // create the namehash for the name using .eth and the label
         bytes32 node = makeNode(ETH_NODE, label);
-
-        // .eth registar uses the labelhash of the node
         uint256 tokenId = uint256(label);
         address owner = ens.owner(node);
 
@@ -444,8 +441,17 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         registrar.transferFrom(currentOwner, address(this), tokenId);
 
         // transfer the ens record back to the new owner (this contract)
-        registrar.reclaim(tokenId, address(this));
+        _wrapETH2LD(label, node, _fuses, wrappedOwner);
+    }
 
+    function _wrapETH2LD(
+        bytes32 label,
+        bytes32 node,
+        uint96 _fuses,
+        address wrappedOwner
+    ) private {
+        // transfer the ens record back to the new owner (this contract)
+        registrar.reclaim(uint256(label), address(this));
         // mint a new ERC1155 token with fuses
         _mint(uint256(node), wrappedOwner, _fuses);
     }
@@ -646,11 +652,12 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     ) public returns (bytes4) {
         //check if it's the eth registrar ERC721
         require(
-            // Check erc721 .eth ownership is this contract
             msg.sender == address(registrar),
             "NFTFuseWrapper: Wrapper only supports .eth ERC721 token transfers"
         );
-        wrapETH2LD(bytes32(tokenId), uint96(0), from);
+
+        bytes32 node = makeNode(ETH_NODE, bytes32(tokenId));
+        _wrapETH2LD(bytes32(tokenId), node, uint96(0), from);
         // TODO: replaces with underlying _wrap function _mint
         //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
