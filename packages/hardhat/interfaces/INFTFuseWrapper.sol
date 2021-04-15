@@ -25,11 +25,7 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         address wrappedOwner
     ) public virtual;
 
-    function unwrap(
-        bytes32 parentNode,
-        bytes32 labelhash,
-        address owner
-    ) public virtual;
+    function unwrap(bytes32 node, address owner) public virtual;
 
     function setSubnodeRecordAndWrap(
         bytes32 node,
@@ -59,8 +55,6 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         returns (bool);
 
     function setResolver(bytes32 node, address resolver) public virtual;
-
-    function setOwner(bytes32 node, address owner) public virtual;
 
     uint96 public constant CANNOT_UNWRAP = 1;
     uint96 public constant CANNOT_TRANSFER = 2; // for DNSSEC names

@@ -36,7 +36,6 @@ describe('NFT fuse wrapper', () => {
   let BaseRegistrar
   let NFTFuseWrapper
   let PublicResolver
-  let SubDomainRegistrar
 
   before(async () => {
     const [owner] = await ethers.getSigners()
@@ -78,11 +77,6 @@ describe('NFT fuse wrapper', () => {
       addresses['NFTFuseWrapper'],
     ])
 
-    SubDomainRegistrar = await deploy('SubdomainRegistrar', [
-      EnsRegistry.address,
-      addresses['NFTFuseWrapper'],
-    ])
-
     // setup .eth
     await EnsRegistry.setSubnodeOwner(
       ROOT_NODE,
@@ -117,20 +111,6 @@ describe('NFT fuse wrapper', () => {
       account,
       addresses['NFTFuseWrapper']
     )
-
-    console.log(
-      'ens.setApprovalForAll SubDomainRegistrar',
-      SubDomainRegistrar.address,
-      true
-    )
-    await EnsRegistry.setApprovalForAll(SubDomainRegistrar.address, true)
-
-    console.log(
-      'NFTFuseWrapper.setApprovalForAll SubDomainRegistrar',
-      SubDomainRegistrar.address,
-      true
-    )
-    await NFTFuseWrapper.setApprovalForAll(SubDomainRegistrar.address, true)
 
     //make sure base registrar is owner of eth TLD
 
@@ -168,11 +148,7 @@ describe('NFT fuse wrapper', () => {
       namehash('unwrapped.xyz')
     )
     expect(ownerOfWrappedXYZ).to.equal(account)
-    await NFTFuseWrapper.unwrap(
-      namehash('xyz'),
-      labelhash('unwrapped'),
-      account
-    )
+    await NFTFuseWrapper.unwrap(namehash('unwrapped.xyz'), account)
     const ownerInRegistry = await EnsRegistry.owner(namehash('unwrapped.xyz'))
     expect(ownerInRegistry).to.equal(account)
   })
@@ -228,6 +204,22 @@ describe('NFT fuse wrapper', () => {
 
     // make sure it can't be unwrapped
     const canUnwrap = await NFTFuseWrapper.canUnwrap(namehash('wrapped2.eth'))
+  })
+
+  it('ownerOf returns the owner', async () => {
+    const [signer] = await ethers.getSigners()
+    const account = await signer.getAddress()
+    const tokenId = labelhash('ownerof')
+    const wrappedTokenId = namehash('ownerof.eth')
+    const CAN_DO_EVERYTHING = 0
+
+    await BaseRegistrar.register(tokenId, account, 84600)
+
+    await NFTFuseWrapper.wrapETH2LD(tokenId, CAN_DO_EVERYTHING, account)
+
+    const owner = await NFTFuseWrapper.ownerOf(wrappedTokenId)
+
+    expect(owner).to.equal(account)
   })
 
   it('can send ERC721 token to restricted wrapper', async () => {

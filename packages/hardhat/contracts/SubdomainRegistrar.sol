@@ -119,7 +119,7 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
         console.log(addrVar);
 
         // Pass ownership of the new subdomain to the registrant
-        wrapper.setOwner(subnode, subdomainOwner);
+        ens.setOwner(subnode, subdomainOwner);
 
         // Problem - Current Public Resolver checks ENS registry for ownership. Owner will be the Restrivtve Wrapper
         // Possible solution A - use PublicResolver that knows how to check Restrictive Wrapper
