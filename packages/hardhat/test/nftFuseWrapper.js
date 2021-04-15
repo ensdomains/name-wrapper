@@ -284,9 +284,9 @@ describe('NFT fuse wrapper', () => {
         account2,
         wrappedTokenId,
         1,
-        '0x0'
+        '0x'
       )
-    ).to.be.revertedWith('revert Fuse already blown for setting owner')
+    ).to.be.reverted
   })
 
   it('can set fuses and burn canSetData', async () => {
@@ -323,13 +323,9 @@ describe('NFT fuse wrapper', () => {
     expect(canSetData).to.equal(false)
 
     //try to set the resolver and ttl
-    expect(
-      NFTFuseWrapper.setResolver(wrappedTokenId, account)
-    ).to.be.revertedWith('revert Fuse already blown for setting resolver')
+    expect(NFTFuseWrapper.setResolver(wrappedTokenId, account)).to.be.reverted
 
-    expect(NFTFuseWrapper.setTTL(wrappedTokenId, 1000)).to.be.revertedWith(
-      'revert Fuse already blown for setting TTL'
-    )
+    expect(NFTFuseWrapper.setTTL(wrappedTokenId, 1000)).to.be.reverted
   })
 
   it('can set fuses and burn canCreateSubdomains', async () => {
@@ -400,9 +396,7 @@ describe('NFT fuse wrapper', () => {
         labelhash('uncreateable'),
         account
       )
-    ).to.be.revertedWith(
-      'revert The fuse has been burned for creating or replacing a subdomain'
-    )
+    ).to.be.reverted
 
     //expect replacing subdomain to succeed
   })
