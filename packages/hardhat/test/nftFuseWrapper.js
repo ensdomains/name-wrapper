@@ -279,7 +279,13 @@ describe('NFT fuse wrapper', () => {
 
     //try to set the resolver and ttl
     expect(
-      NFTFuseWrapper.setOwner(wrappedTokenId, account2)
+      NFTFuseWrapper.safeTransferFrom(
+        account,
+        account2,
+        wrappedTokenId,
+        1,
+        '0x0'
+      )
     ).to.be.revertedWith('revert Fuse already blown for setting owner')
   })
 
