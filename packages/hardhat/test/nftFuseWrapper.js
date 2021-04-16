@@ -36,15 +36,19 @@ describe('NFT fuse wrapper', () => {
   let BaseRegistrar
   let NFTFuseWrapper
   let PublicResolver
+  let signers
+  let account
 
   before(async () => {
-    const [owner] = await ethers.getSigners()
+    signers = await ethers.getSigners()
+    account = await signers[0].getAddress()
+
     const registryJSON = loadENSContract('ens', 'ENSRegistry')
 
     const registryContractFactory = new ethers.ContractFactory(
       registryJSON.abi,
       registryJSON.bytecode,
-      owner
+      signers[0]
     )
 
     EnsRegistry = await registryContractFactory.deploy()
@@ -55,12 +59,11 @@ describe('NFT fuse wrapper', () => {
       console.log('failing on rootOwner', e)
     }
     console.log('succeeded on root owner')
-    const account = await owner.getAddress()
 
     BaseRegistrar = await new ethers.ContractFactory(
       baseRegistrarJSON.abi,
       baseRegistrarJSON.bytecode,
-      owner
+      signers[0]
     ).deploy(EnsRegistry.address, namehash('eth'))
 
     console.log(`*** BaseRegistrar deployed at ${BaseRegistrar.address} *** `)
@@ -118,9 +121,8 @@ describe('NFT fuse wrapper', () => {
 
     expect(ownerOfEth).to.equal(BaseRegistrar.address)
   })
+
   it('wrap() wraps a name with the ERC721 standard and fuses', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const fuses = await NFTFuseWrapper.MINIMUM_PARENT_FUSES()
 
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
@@ -130,9 +132,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('unwrap() can unwrap a wrapped name', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
-
     await NFTFuseWrapper.setSubnodeOwner(
       namehash('xyz'),
       labelhash('unwrapped'),
@@ -149,8 +148,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('unwrapETH2LD() can unwrap a wrapped .eth name', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'unwrapped'
     const labelHash = labelhash(label)
 
@@ -172,8 +169,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('wrapETH2LD() wraps a name with the ERC721 standard and fuses', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'wrapped2'
     const labelHash = labelhash(label)
     const nameHash = namehash(label + '.eth')
@@ -205,8 +200,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('ownerOf returns the owner', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'ownerof'
     const tokenId = labelhash(label)
     const wrappedTokenId = namehash('ownerof.eth')
@@ -222,8 +215,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can send ERC721 token to restricted wrapper', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const tokenId = labelhash('send2contract')
     const wrappedTokenId = namehash('send2contract.eth')
 
@@ -243,8 +234,7 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can set fuses and burn transfer', async () => {
-    const [signer, signer2] = await ethers.getSigners()
-    const account = await signer.getAddress()
+    const [signer2] = await ethers.getSigners()
     const account2 = await signer2.getAddress()
     const label = 'fuses3'
     const tokenId = labelhash('fuses3')
@@ -290,8 +280,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can set fuses and burn canSetData', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'fuses1'
     const tokenId = labelhash(label)
     const wrappedTokenId = namehash(label + '.eth')
@@ -330,8 +318,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can set fuses and burn canCreateSubdomains', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'fuses2'
     const tokenId = labelhash(label)
     const wrappedTokenId = namehash(label + '.eth')
@@ -404,8 +390,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can setSubnodeOwnerAndWrap', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'subdomains'
     const tokenId = labelhash(label)
     const wrappedTokenId = namehash(label + '.eth')
@@ -443,8 +427,6 @@ describe('NFT fuse wrapper', () => {
   })
 
   it('can setSubnodeRecordAndWrap', async () => {
-    const [signer] = await ethers.getSigners()
-    const account = await signer.getAddress()
     const label = 'subdomains2'
     const tokenId = labelhash(label)
     const wrappedTokenId = namehash(label + '.eth')
