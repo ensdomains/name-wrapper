@@ -408,14 +408,14 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         require(owner == address(0), "ERC1155: mint of existing token");
         require(newOwner != address(0), "ERC1155: mint to the zero address");
         setData(tokenId, newOwner, fuses);
-        //TODO: emit transfer event emit TransferSingle(msg.sender, from, to, id, amount);
+        emit TransferSingle(msg.sender, owner, address(0x0), tokenId, 1);
     }
 
     function _burn(uint256 tokenId) internal {
         address owner = ownerOf(tokenId);
         // Clear fuses and set owner to 0
         setData(tokenId, address(0x0), 0);
-        //TODO: emit transfer event emit TransferSingle(msg.sender, from, to, id, amount);
+        emit TransferSingle(msg.sender, owner, address(0x0), tokenId, 1);
     }
 
     function wrapETH2LD(
@@ -469,7 +469,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         require(
             owner == msg.sender ||
                 ens.isApprovedForAll(owner, msg.sender) ||
-                isApprovedForAll(owner, msg.sender), /* TODO:  || add authorised by sender */
+                isApprovedForAll(owner, msg.sender),
             "NFTFuseWrapper: Domain is not owned by the sender"
         );
         ens.setOwner(node, address(this));
@@ -553,7 +553,6 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         address resolver,
         uint64 ttl
     ) external {
-        //TODO add canTransfer when fuse is written
         require(
             canTransfer(node),
             "NFTFuseWrapper: Fuse is burned for transferring"
@@ -627,15 +626,6 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         ens.setResolver(node, resolver);
     }
 
-    // function setOwner(bytes32 node, address owner)
-    //     public
-    //     override
-    //     ownerOnly(node)
-    // {
-    //     require(canTransfer(node), "NFTFuseWrapper: Fuse already burned for setting owner");
-    //     safeTransferFrom(msg.sender, owner, uint256(node), 1, bytes("0x0"));
-    // }
-
     function setTTL(bytes32 node, uint64 ttl) public ownerOnly(node) {
         require(
             canSetData(node),
@@ -658,11 +648,9 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
 
         bytes32 node = makeNode(ETH_NODE, bytes32(tokenId));
         _wrapETH2LD(bytes32(tokenId), node, uint96(0), from);
-        // TODO: replaces with underlying _wrap function _mint
-        //if it is, wrap it, if it's not revert
         return _ERC721_RECEIVED;
     }
 }
 
 // events for wrapping names, unwrap, setFuses
-// TODO: everywhere we're using labelhashes, take labeh and hash it ourselves. Then log the event. parentNode, label (string), fuses, owner
+// Then log the event. parentNode, label (string), fuses, owner
