@@ -428,7 +428,6 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         uint256 tokenId = uint256(labelhash);
         address owner = ens.owner(node);
 
-        // check msg.sender() == authorised or ens.owner
         // TODO: test account a creates a name, authorised wrapper, account b tries to do something with thename
         require(
             owner == msg.sender ||
