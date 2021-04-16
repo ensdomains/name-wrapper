@@ -419,7 +419,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     }
 
     function wrapETH2LD(
-        string memory label,
+        string calldata label,
         uint96 _fuses,
         address wrappedOwner
     ) public override {
@@ -460,12 +460,13 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
 
     function wrap(
         bytes32 parentNode,
-        bytes32 label,
+        string calldata label,
         uint96 _fuses,
         address wrappedOwner
     ) public override {
-        bytes32 node = makeNode(parentNode, label);
-        _wrap(parentNode, label, _fuses, wrappedOwner);
+        bytes32 labelhash = keccak256(bytes(label));
+        bytes32 node = makeNode(parentNode, labelhash);
+        _wrap(parentNode, labelhash, _fuses, wrappedOwner);
         address owner = ens.owner(node);
 
         require(
@@ -475,6 +476,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
             "NFTFuseWrapper: Domain is not owned by the sender"
         );
         ens.setOwner(node, address(this));
+        emit Wrap(parentNode, label, _fuses, owner);
     }
 
     function _wrap(

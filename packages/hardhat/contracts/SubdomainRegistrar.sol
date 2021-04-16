@@ -56,11 +56,12 @@ contract SubdomainRegistrar is ISubdomainRegistrar {
 
     function configureDomain(
         bytes32 parentNode,
-        bytes32 label,
+        string memory label,
         uint256 price,
         uint256 referralFeePPM
     ) public {
-        bytes32 node = keccak256(abi.encodePacked(parentNode, label));
+        bytes32 labelhash = keccak256(bytes(label));
+        bytes32 node = keccak256(abi.encodePacked(parentNode, labelhash));
         Domain storage domain = domains[node];
 
         // if (parentNode == ETH_NODE) {

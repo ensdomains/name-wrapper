@@ -124,7 +124,7 @@ describe('NFT fuse wrapper', () => {
     const fuses = await NFTFuseWrapper.MINIMUM_PARENT_FUSES()
 
     await EnsRegistry.setApprovalForAll(NFTFuseWrapper.address, true)
-    await NFTFuseWrapper.wrap(ROOT_NODE, labelhash('xyz'), fuses, account)
+    await NFTFuseWrapper.wrap(ROOT_NODE, 'xyz', fuses, account)
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(namehash('xyz'))
     expect(ownerOfWrappedXYZ).to.equal(account)
   })
@@ -138,12 +138,7 @@ describe('NFT fuse wrapper', () => {
       labelhash('unwrapped'),
       account
     )
-    await NFTFuseWrapper.wrap(
-      namehash('xyz'),
-      labelhash('unwrapped'),
-      0,
-      account
-    )
+    await NFTFuseWrapper.wrap(namehash('xyz'), 'unwrapped', 0, account)
     const ownerOfWrappedXYZ = await NFTFuseWrapper.ownerOf(
       namehash('unwrapped.xyz')
     )

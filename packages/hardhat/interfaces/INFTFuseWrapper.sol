@@ -12,13 +12,6 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         address owner
     );
 
-    event WrapETH2LD(
-        bytes32 indexed parentNode,
-        string indexed label,
-        uint96 fuses,
-        address owner
-    );
-
     function ownerOf(uint256 id) public virtual returns (address);
 
     function getData(uint256 tokenId)
@@ -27,14 +20,14 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         returns (address owner, uint96 fuses);
 
     function wrapETH2LD(
-        string memory label,
+        string calldata label,
         uint96 _fuses,
         address wrappedOwner
     ) public virtual;
 
     function wrap(
         bytes32 node,
-        bytes32 label,
+        string calldata label,
         uint96 _fuses,
         address wrappedOwner
     ) public virtual;
