@@ -5,6 +5,20 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
 import "./Resolver.sol";
 
 abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
+    event Wrap(
+        bytes32 indexed parentNode,
+        string indexed label,
+        uint96 fuses,
+        address owner
+    );
+
+    event WrapETH2LD(
+        bytes32 indexed parentNode,
+        string indexed label,
+        uint96 fuses,
+        address owner
+    );
+
     function ownerOf(uint256 id) public virtual returns (address);
 
     function getData(uint256 tokenId)
@@ -13,7 +27,7 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
         returns (address owner, uint96 fuses);
 
     function wrapETH2LD(
-        bytes32 label,
+        string memory label,
         uint96 _fuses,
         address wrappedOwner
     ) public virtual;
@@ -65,3 +79,6 @@ abstract contract INFTFuseWrapper is IERC1155, IERC1155MetadataURI {
     uint96 public constant MINIMUM_PARENT_FUSES =
         CANNOT_UNWRAP | CANNOT_REPLACE_SUBDOMAIN;
 }
+
+// events for wrapping names, unwrap, setFuses
+// Then log the event. parentNode, label (string), fuses, owner

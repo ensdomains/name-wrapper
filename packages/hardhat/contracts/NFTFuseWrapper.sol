@@ -419,12 +419,13 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
     }
 
     function wrapETH2LD(
-        bytes32 label,
+        string memory label,
         uint96 _fuses,
         address wrappedOwner
     ) public override {
-        bytes32 node = makeNode(ETH_NODE, label);
-        uint256 tokenId = uint256(label);
+        bytes32 labelhash = keccak256(bytes(label));
+        bytes32 node = makeNode(ETH_NODE, labelhash);
+        uint256 tokenId = uint256(labelhash);
         address owner = ens.owner(node);
 
         // check msg.sender() == authorised or ens.owner
@@ -441,7 +442,9 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         registrar.transferFrom(currentOwner, address(this), tokenId);
 
         // transfer the ens record back to the new owner (this contract)
-        _wrapETH2LD(label, node, _fuses, wrappedOwner);
+        _wrapETH2LD(labelhash, node, _fuses, wrappedOwner);
+
+        emit Wrap(ETH_NODE, label, _fuses, owner);
     }
 
     function _wrapETH2LD(
@@ -651,6 +654,3 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         return _ERC721_RECEIVED;
     }
 }
-
-// events for wrapping names, unwrap, setFuses
-// Then log the event. parentNode, label (string), fuses, owner

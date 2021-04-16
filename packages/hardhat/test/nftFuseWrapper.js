@@ -156,21 +156,23 @@ describe('NFT fuse wrapper', () => {
   it('unwrapETH2LD() can unwrap a wrapped .eth name', async () => {
     const [signer] = await ethers.getSigners()
     const account = await signer.getAddress()
+    const label = 'unwrapped'
+    const labelHash = labelhash('unwrapped')
 
-    await BaseRegistrar.register(labelhash('unwrapped'), account, 84600)
+    await BaseRegistrar.register(labelHash, account, 84600)
 
     //allow the restricted name wrappper to transfer the name to itself and reclaim it
     await BaseRegistrar.setApprovalForAll(NFTFuseWrapper.address, true)
 
-    await NFTFuseWrapper.wrapETH2LD(labelhash('unwrapped'), 0, account)
+    await NFTFuseWrapper.wrapETH2LD(label, 0, account)
     const ownerOfWrappedETH = await NFTFuseWrapper.ownerOf(
       namehash('unwrapped.eth')
     )
     expect(ownerOfWrappedETH).to.equal(account)
-    await NFTFuseWrapper.unwrapETH2LD(labelhash('unwrapped'), account)
+    await NFTFuseWrapper.unwrapETH2LD(labelHash, account)
     const ownerInRegistry = await EnsRegistry.owner(namehash('unwrapped.eth'))
     expect(ownerInRegistry).to.equal(account)
-    const ownerInRegistrar = await BaseRegistrar.ownerOf(labelhash('unwrapped'))
+    const ownerInRegistrar = await BaseRegistrar.ownerOf(labelHash)
     expect(ownerInRegistrar).to.equal(account)
   })
 
@@ -286,7 +288,7 @@ describe('NFT fuse wrapper', () => {
         1,
         '0x'
       )
-    ).to.be.reverted
+    ).to.be.revertedWith('revert Fuse already blown for setting owner')
   })
 
   it('can set fuses and burn canSetData', async () => {
