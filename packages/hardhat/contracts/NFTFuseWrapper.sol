@@ -387,10 +387,10 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         return fuses & CANNOT_REPLACE_SUBDOMAIN == 0;
     }
 
-    function canCallSetSubnode(
-        bytes32 node,
-        bytes32 label // Todo: make this name more sensible
-    ) public returns (bool) {
+    function canCallSetSubnodeOwner(bytes32 node, bytes32 label)
+        public
+        returns (bool)
+    {
         bytes32 subnode = makeNode(node, label);
         address owner = ens.owner(subnode);
 
@@ -573,7 +573,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         uint64 ttl
     ) public ownerOnly(node) {
         require(
-            canCallSetSubnode(node, label),
+            canCallSetSubnodeOwner(node, label),
             "NFTFuseWrapper: Fuse has been burned for creating or replacing a subdomain"
         );
 
@@ -586,7 +586,7 @@ contract NFTFuseWrapper is INFTFuseWrapper, ERC165 {
         address newOwner
     ) public override ownerOnly(node) returns (bytes32) {
         require(
-            canCallSetSubnode(node, label),
+            canCallSetSubnodeOwner(node, label),
             "NFTFuseWrapper: Fuse has been burned for creating or replacing a subdomain"
         );
 
