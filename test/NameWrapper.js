@@ -155,27 +155,51 @@ describe('Name Wrapper', () => {
       expect(await NameWrapper.ownerOf(namehash('xyz'))).to.equal(EMPTY_ADDRESS)
 
       await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
-      await NameWrapper.wrap(ROOT_NODE, 'xyz', account, fuses)
+      await NameWrapper.wrap(ROOT_NODE, 'xyz', account, MINIMUM_PARENT_FUSES)
       expect(await NameWrapper.ownerOf(namehash('xyz'))).to.equal(account)
     })
 
-    it('emits event for Wrap', async () => {
-      const fuses = MINIMUM_PARENT_FUSES
+    it('Sets the correct parent when wrapping', async () => {
+      await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.wrap(ROOT_NODE, 'xyz', account, MINIMUM_PARENT_FUSES)
+      expect(await NameWrapper.parents(namehash('xyz'))).to.equal(ROOT_NODE)
 
+      await NameWrapper.setSubnodeOwner(
+        namehash('xyz'),
+        labelhash('sub'),
+        account
+      )
+
+      await NameWrapper.wrap(namehash('xyz'), 'sub', account, 0)
+
+      expect(await NameWrapper.parents(namehash('sub.xyz'))).to.equal(
+        namehash('xyz')
+      )
+    })
+
+    it('emits event for Wrap', async () => {
       await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
 
-      const tx = NameWrapper.wrap(ROOT_NODE, 'xyz', account, fuses)
+      const tx = NameWrapper.wrap(
+        ROOT_NODE,
+        'xyz',
+        account,
+        MINIMUM_PARENT_FUSES
+      )
       await expect(tx)
         .to.emit(NameWrapper, 'NameWrapped')
-        .withArgs(ROOT_NODE, 'xyz', account, fuses)
+        .withArgs(ROOT_NODE, 'xyz', account, MINIMUM_PARENT_FUSES)
     })
 
     it('emits event for TransferSingle', async () => {
-      const fuses = MINIMUM_PARENT_FUSES
-
       await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
 
-      const tx = NameWrapper.wrap(ROOT_NODE, 'xyz', account, fuses)
+      const tx = NameWrapper.wrap(
+        ROOT_NODE,
+        'xyz',
+        account,
+        MINIMUM_PARENT_FUSES
+      )
       await expect(tx)
         .to.emit(NameWrapper, 'TransferSingle')
         .withArgs(account, EMPTY_ADDRESS, account, namehash('xyz'), 1)

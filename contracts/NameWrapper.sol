@@ -574,6 +574,7 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
         node = _makeNode(parentNode, keccak256(bytes(label)));
 
         _mint(node, wrappedOwner, _fuses);
+        _setParent(node, parentNode);
         emit NameWrapped(parentNode, label, wrappedOwner, _fuses);
     }
 
