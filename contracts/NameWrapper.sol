@@ -262,6 +262,7 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
         bytes32 subnode = _makeNode(node, label);
         address owner = ens.owner(subnode);
 
+        //TODO: Could be made more efficient if making recursive calls?
         return
             (owner == address(0) && canCreateSubdomain(node)) ||
             (owner != address(0) && canReplaceSubdomain(node));

@@ -686,6 +686,47 @@ describe('Name Wrapper', () => {
       )
     })
 
+    it.only('Rewrapping expired names with no fuses causes subdomains fuses to be cleared ', async () => {
+      const DAY = 60 * 60 * 24
+      const GRACE_PERIOD = 90
+      await BaseRegistrar.register(labelHash, account, DAY)
+      await BaseRegistrar.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.wrapETH2LD(label, account, MINIMUM_PARENT_FUSES)
+      await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.setSubnodeOwnerAndWrap(
+        nameHash,
+        'sub',
+        account,
+        MINIMUM_PARENT_FUSES
+      )
+      //expect fuses to be burned on subdoamin
+      const subTokenId = namehash(`sub.${label}.eth`)
+      expect(await NameWrapper.canUnwrap(subTokenId)).to.equal(false)
+      expect(await NameWrapper.canReplaceSubdomain(subTokenId)).to.equal(false)
+      await increaseTime(DAY * GRACE_PERIOD + DAY + 1)
+      await mine()
+
+      expect(await BaseRegistrar.available(labelHash)).to.equal(true)
+
+      await BaseRegistrar2.register(labelHash, account2, DAY)
+      expect(await BaseRegistrar.ownerOf(labelHash)).to.equal(account2)
+      await BaseRegistrar2.setApprovalForAll(NameWrapper.address, true)
+      const tx = await NameWrapper2.wrapETH2LD(
+        label,
+        account2,
+        CAN_DO_EVERYTHING
+      )
+
+      expect(await NameWrapper2.ownerOf(nameHash)).to.equal(account2)
+      expect(await BaseRegistrar.ownerOf(labelHash)).to.equal(
+        NameWrapper.address
+      )
+
+      //expect fuses to be unburned on subdoamin
+      expect(await NameWrapper.canUnwrap(subTokenId)).to.equal(true)
+      expect(await NameWrapper.canReplaceSubdomain(subTokenId)).to.equal(true)
+    })
+
     it('emits Wrap event', async () => {
       await BaseRegistrar.register(labelHash, account, 84600)
       await BaseRegistrar.setApprovalForAll(NameWrapper.address, true)
