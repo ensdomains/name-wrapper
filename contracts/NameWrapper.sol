@@ -237,6 +237,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
             return true;
         }
         bytes32 parent = parents[node];
+        // need the label ID for this
+        // Need to check the eth node, but we don't have the label
+        // if (parent == ETH_NODE) {
+        //     return registrar.available(uint256(node));
+        // }
         if (parent == ROOT_NODE) {
             return false;
         }
