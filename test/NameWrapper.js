@@ -686,7 +686,7 @@ describe('Name Wrapper', () => {
       )
     })
 
-    it.only('Rewrapping expired names with no fuses causes subdomains fuses to be cleared ', async () => {
+    it('Rewrapping expired names with no fuses causes subdomains fuses to be cleared ', async () => {
       const DAY = 60 * 60 * 24
       const GRACE_PERIOD = 90
       await BaseRegistrar.register(labelHash, account, DAY)
