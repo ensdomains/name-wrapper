@@ -133,8 +133,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
      */
 
     function canUnwrap(bytes32 node) public view override returns (bool) {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_UNWRAP == 0;
+        if (getFuses(node) & CANNOT_UNWRAP == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -145,8 +148,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
      */
 
     function canBurnFuses(bytes32 node) public view override returns (bool) {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_BURN_FUSES == 0;
+        if (getFuses(node) & CANNOT_BURN_FUSES == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -157,8 +163,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
      */
 
     function canTransfer(bytes32 node) public view override returns (bool) {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_TRANSFER == 0;
+        if (getFuses(node) & CANNOT_TRANSFER == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -169,8 +178,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
      */
 
     function canSetResolver(bytes32 node) public view override returns (bool) {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_SET_RESOLVER == 0;
+        if (getFuses(node) & CANNOT_SET_RESOLVER == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -181,8 +193,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
      */
 
     function canSetTTL(bytes32 node) public view override returns (bool) {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_SET_TTL == 0;
+        if (getFuses(node) & CANNOT_SET_TTL == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -198,8 +213,11 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
         override
         returns (bool)
     {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_CREATE_SUBDOMAIN == 0;
+        if (getFuses(node) & CANNOT_CREATE_SUBDOMAIN == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        return canReplaceSubdomain(parent);
     }
 
     /**
@@ -215,8 +233,14 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
         override
         returns (bool)
     {
-        uint96 fuses = getFuses(node);
-        return fuses & CANNOT_REPLACE_SUBDOMAIN == 0;
+        if (getFuses(node) & CANNOT_REPLACE_SUBDOMAIN == 0) {
+            return true;
+        }
+        bytes32 parent = parents[node];
+        if (parent == ROOT_NODE) {
+            return false;
+        }
+        return canReplaceSubdomain(parent);
     }
 
     /**
