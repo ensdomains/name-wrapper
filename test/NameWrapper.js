@@ -687,6 +687,13 @@ describe('Name Wrapper', () => {
       expect(await NameWrapper.ownerOf(nameHash)).to.equal(account2)
     })
 
+    it('Sets the correct parent when wrapping', async () => {
+      await BaseRegistrar.setApprovalForAll(NameWrapper.address, true)
+      await BaseRegistrar.register(labelHash, account, 84600)
+      await NameWrapper.wrapETH2LD(label, account2, CAN_DO_EVERYTHING)
+      expect(await NameWrapper.parents(nameHash)).to.equal(namehash('eth'))
+    })
+
     it('Does not allow wrapping with a target address of 0x0', async () => {
       await BaseRegistrar.setApprovalForAll(NameWrapper.address, true)
       await BaseRegistrar.register(labelHash, account, 84600)

@@ -16,6 +16,7 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
     BaseRegistrar public immutable registrar;
     IMetadataService public metadataService;
     bytes4 private constant ERC721_RECEIVED = 0x150b7a02;
+    mapping(bytes32 => bytes32) public parents;
 
     bytes32 private constant ETH_NODE =
         0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
@@ -275,6 +276,7 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
         // mint a new ERC1155 token with fuses
 
         _checkFuses(ETH_NODE, _fuses);
+        _setParent(node, ETH_NODE);
         _mint(node, wrappedOwner, _fuses);
 
         emit NameWrapped(ETH_NODE, label, wrappedOwner, _fuses);
@@ -524,6 +526,12 @@ contract NameWrapper is Ownable, ERC1155Fuse, INameWrapper {
     }
 
     /***** Internal functions */
+
+    function _setParent(bytes32 node, bytes32 parent) internal {
+        if (parents[node] == 0x0) {
+            parents[node] = parent;
+        }
+    }
 
     function _canTransfer(uint96 fuses) internal pure override returns (bool) {
         return fuses & CANNOT_TRANSFER == 0;
