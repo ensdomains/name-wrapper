@@ -15,7 +15,7 @@ uint96 constant CAN_DO_EVERYTHING = 0;
 interface INameWrapper is IERC1155 {
     event NameWrapped(
         bytes32 indexed parentNode,
-        string indexed label,
+        string label,
         address owner,
         uint96 fuses
     );
