@@ -260,6 +260,22 @@ describe('Name Wrapper', () => {
       )
     })
 
+    it('Allows wrapping of .eth subdomains', async () => {
+      const label = 'wrapped'
+      const labelHash = labelhash(label)
+      const nameHash = namehash(`sub.${label}.eth`)
+      await BaseRegistrar.register(labelHash, account, 84600)
+      await EnsRegistry.setSubnodeOwner(
+        namehash(`${label}.eth`),
+        labelhash('sub'),
+        account
+      )
+      await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.wrap(encodeName(`sub.${label}.eth`), account, 0)
+      expect(await NameWrapper.ownerOf(nameHash)).to.equal(account)
+      expect(await EnsRegistry.owner(nameHash)).to.equal(NameWrapper.address)
+    })
+
     it('Fuses are disabled if CANNOT_REPLACE_SUBDOMAIN has not been burned on the parent domain', async () => {
       // register sub.xyz before we wrap xyz
       await EnsRegistry.setSubnodeOwner(
