@@ -183,6 +183,12 @@ describe('Name Wrapper', () => {
       expect(await NameWrapper.ownerOf(namehash('xyz'))).to.equal(account)
     })
 
+    it('Allows specifying resolver', async () => {
+      await EnsRegistry.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.wrap(encodeName('xyz'), account, 0, account2)
+      expect(await EnsRegistry.resolver(namehash('xyz'))).to.equal(account2)
+    })
+
     it('emits event for Wrap', async () => {
       const fuses = MINIMUM_PARENT_FUSES
 
@@ -655,6 +661,13 @@ describe('Name Wrapper', () => {
       await expect(
         NameWrapper.wrapETH2LD(label, account, CAN_DO_EVERYTHING, EMPTY_ADDRESS)
       ).to.be.reverted
+    })
+
+    it('Allows specifying resolver', async () => {
+      await BaseRegistrar.register(labelHash, account, 84600)
+      await BaseRegistrar.setApprovalForAll(NameWrapper.address, true)
+      await NameWrapper.wrapETH2LD(label, account, CAN_DO_EVERYTHING, account2)
+      expect(await EnsRegistry.resolver(nameHash)).to.equal(account2)
     })
 
     it('Can re-wrap a name that was wrapped has already expired', async () => {
@@ -2210,6 +2223,22 @@ describe('Name Wrapper', () => {
       expect(
         await NameWrapper.allFusesBurned(wrappedTokenId, CANNOT_UNWRAP)
       ).to.equal(true)
+    })
+
+    it('Allows specifiying resolver address', async () => {
+      await BaseRegistrar.register(tokenId, account, 84600)
+
+      await BaseRegistrar['safeTransferFrom(address,address,uint256,bytes)'](
+        account,
+        NameWrapper.address,
+        tokenId,
+        abiCoder.encode(
+          ['string', 'address', 'uint96', 'address'],
+          [label, account, '0x000000000000000000000001', account2]
+        )
+      )
+
+      expect(await EnsRegistry.resolver(wrappedTokenId)).to.equal(account2)
     })
 
     it('Reverts if transferred without data', async () => {

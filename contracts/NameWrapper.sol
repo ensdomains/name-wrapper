@@ -161,17 +161,22 @@ contract NameWrapper is
         address resolver
     ) public override {
         bytes32 labelhash = _wrapETH2LD(label, wrappedOwner, _fuses, resolver);
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
         uint256 tokenId = uint256(labelhash);
         address owner = registrar.ownerOf(tokenId);
-
-        // transfer the ens record back to the new owner (this contract)
-        registrar.reclaim(uint256(labelhash), address(this));
 
         require(
             owner == msg.sender ||
                 registrar.isApprovedForAll(owner, msg.sender),
             "NameWrapper: Sender is not owner or authorised by the owner or authorised on the .eth registrar"
         );
+
+        // transfer the ens record back to the new owner (this contract)
+        registrar.reclaim(uint256(labelhash), address(this));
+
+        if (resolver != address(0)) {
+            ens.setResolver(node, resolver);
+        }
 
         // transfer the token from the user to this contract
         registrar.transferFrom(owner, address(this), tokenId);
@@ -193,11 +198,15 @@ contract NameWrapper is
         address resolver,
         uint96 _fuses
     ) external override onlyController returns (uint256 expires) {
-        bytes32 labelhash = keccak256(bytes(label));
+        bytes32 labelhash = _wrapETH2LD(label, wrappedOwner, _fuses, resolver);
         uint256 tokenId = uint256(labelhash);
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
 
         expires = registrar.register(tokenId, address(this), duration);
-        _wrapETH2LD(label, wrappedOwner, _fuses, resolver);
+
+        if (resolver != address(0)) {
+            ens.setResolver(node, resolver);
+        }
     }
 
     /**
@@ -521,9 +530,14 @@ contract NameWrapper is
         );
 
         bytes32 labelhash = _wrapETH2LD(label, owner, fuses, resolver);
+        bytes32 node = _makeNode(ETH_NODE, labelhash);
 
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(uint256(labelhash), address(this));
+
+        if (resolver != address(0)) {
+            ens.setResolver(node, resolver);
+        }
 
         return IERC721Receiver(to).onERC721Received.selector;
     }
@@ -599,10 +613,6 @@ contract NameWrapper is
         // mint a new ERC1155 token with fuses
         bytes memory name = _addLabel(label, "\x03eth\x00");
         _mint(node, name, wrappedOwner, _fuses);
-
-        if (resolver != address(0)) {
-            ens.setResolver(node, resolver);
-        }
 
         emit NameWrapped(node, name, wrappedOwner, _fuses);
     }
