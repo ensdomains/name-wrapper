@@ -607,8 +607,7 @@ contract NameWrapper is
     function _wrapETH2LD(
         string memory label,
         address wrappedOwner,
-        uint96 _fuses,
-        address resolver
+        uint96 _fuses
     ) private returns (bytes32 labelhash) {
         labelhash = keccak256(bytes(label));
         bytes32 node = _makeNode(ETH_NODE, labelhash);
