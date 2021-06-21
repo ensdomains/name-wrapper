@@ -167,6 +167,7 @@ contract NameWrapper is
 
         require(
             owner == msg.sender ||
+                isApprovedForAll(owner, msg.sender) ||
                 registrar.isApprovedForAll(owner, msg.sender),
             "NameWrapper: Sender is not owner or authorised by the owner or authorised on the .eth registrar"
         );
@@ -243,7 +244,9 @@ contract NameWrapper is
         address owner = ens.owner(node);
 
         require(
-            owner == msg.sender || ens.isApprovedForAll(owner, msg.sender),
+            owner == msg.sender ||
+                isApprovedForAll(owner, msg.sender) ||
+                ens.isApprovedForAll(owner, msg.sender),
             "NameWrapper: Domain is not owned by the sender"
         );
         ens.setOwner(node, address(this));
