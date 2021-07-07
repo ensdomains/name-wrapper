@@ -15,7 +15,7 @@ try {
 }
 const { PRIVATE_KEY, ETHERSCAN_API_KEY, INFURA_API_KEY } = envfile.parse(fs.readFileSync(filename));
 
-const commit = execSync('git rev-parse --short HEAD', ).toString().trim();
+const commit = execSync('git rev-parse --short HEAD').toString().trim()
 
 module.exports = {
   solidity: {
@@ -43,5 +43,12 @@ module.exports = {
     excludeContracts: ['mocks', 'registry', 'ethregistrar'],
     outputFile: `gasreport-${commit}.txt`,
     noColors: true,
-  }
+  },
+  abiExporter: {
+    path: './abi',
+    clear: true,
+    flat: true,
+    only: [':NameWrapper'],
+    spacing: 2,
+  },
 }
