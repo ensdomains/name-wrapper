@@ -1,3 +1,5 @@
+# This repo is deprecated and has been merged into https://github.com/ensdomains/ens-contracts/tree/master/contracts/wrapper
+
 # ENS Name Wrapper
 
 The ENS Name Wrapper is a smart contract that wraps existing ENS names, providing several new features:
