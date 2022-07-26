@@ -115,9 +115,10 @@ contract NameWrapper is
         override
         returns (bool)
     {
+        address owner = ownerOf(uint256(node));
         return
-            ownerOf(uint256(node)) == addr ||
-            isApprovedForAll(ownerOf(uint256(node)), addr);
+            owner == addr ||
+            isApprovedForAll(owner, addr);
     }
 
     /**
@@ -161,17 +162,17 @@ contract NameWrapper is
         address resolver
     ) public override {
         uint256 tokenId = uint256(keccak256(bytes(label)));
-        address owner = registrar.ownerOf(tokenId);
+        address registrant = registrar.ownerOf(tokenId);
 
         require(
-            owner == msg.sender ||
-                isApprovedForAll(owner, msg.sender) ||
-                registrar.isApprovedForAll(owner, msg.sender),
+            registrant == msg.sender ||
+                isApprovedForAll(registrant, msg.sender) ||
+                registrar.isApprovedForAll(registrant, msg.sender),
             "NameWrapper: Sender is not owner or authorised by the owner or authorised on the .eth registrar"
         );
 
         // transfer the token from the user to this contract
-        registrar.transferFrom(owner, address(this), tokenId);
+        registrar.transferFrom(registrant, address(this), tokenId);
 
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(tokenId, address(this));
@@ -539,12 +540,12 @@ contract NameWrapper is
             address resolver
         ) = abi.decode(data, (string, address, uint96, address));
 
+        bytes32 labelhash = bytes32(tokenId);
+
         require(
-            keccak256(bytes(label)) == bytes32(tokenId),
+            keccak256(bytes(label)) == labelhash,
             "NameWrapper: Token id does match keccak(label) of label provided in data field"
         );
-
-        bytes32 labelhash = keccak256(bytes(label));
 
         // transfer the ens record back to the new owner (this contract)
         registrar.reclaim(uint256(labelhash), address(this));
@@ -736,5 +737,6 @@ contract NameWrapper is
         if (ens.owner(node) != address(this)) {
             return (NameSafety.ControllerNotWrapped, node);
         }
+        return (NameSafety.Safe, 0);
     }
 }
